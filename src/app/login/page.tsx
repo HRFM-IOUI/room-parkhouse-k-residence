@@ -35,7 +35,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md bg-white rounded-xl shadow-xl p-8 space-y-6 border border-gray-300">
         <div className="text-center">
           <h1 className="text-3xl font-semibold text-[#192349]">ログイン</h1>
-          <p className="text-sm text-gray-500 mt-2">今日もお疲れ様です！</p>
+          <p className="text-sm text-gray-500 mt-2">今日もお疲れ様です!！</p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-5">
