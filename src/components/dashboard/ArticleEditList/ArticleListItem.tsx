@@ -1,6 +1,8 @@
+"use client";
 import React from "react";
 import styles from "./ArticleEditList.module.css";
 import ReactMarkdown from "react-markdown";
+import Image from "next/image"; // 追加
 
 type BlockType = "heading" | "text" | "image" | "video";
 type Block = { id: string; type: BlockType; content: string };
@@ -68,11 +70,17 @@ export default function ArticleListItem({
       <div className={styles.listItemMain}>
         {/* サムネイル表示 */}
         {firstImage && (
-          <img
-            src={firstImage.content}
-            alt="thumbnail"
-            style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 6, marginRight: 12 }}
-          />
+          <div style={{ width: 64, height: 64, marginRight: 12 }}>
+            <Image
+              src={firstImage.content}
+              alt="thumbnail"
+              width={64}
+              height={64}
+              objectFit="cover"
+              style={{ borderRadius: 6 }}
+              priority // 画像の優先読み込み
+            />
+          </div>
         )}
         <span className={styles.listItemTitle}>
           {/* 見出し・テキストブロックの最初の一文だけMarkdown描画 */}

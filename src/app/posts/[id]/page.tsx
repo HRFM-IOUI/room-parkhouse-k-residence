@@ -1,4 +1,4 @@
-"use client";
+"use client"; 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { doc, getDoc } from "firebase/firestore";
@@ -75,7 +75,7 @@ export default function PostDetailPage() {
           blocks: Array.isArray(data.blocks)
             ? data.blocks
                 .filter(
-                  (b: any) =>
+                  (b: Block) =>
                     typeof b === "object" &&
                     b !== null &&
                     "type" in b &&
@@ -84,7 +84,7 @@ export default function PostDetailPage() {
                     typeof b.content === "string" &&
                     ["heading", "text", "image", "video"].includes(b.type)
                 )
-                .map((b: any) => ({ type: b.type, content: b.content }))
+                .map((b: Block) => ({ type: b.type, content: b.content }))
             : [],
         });
       }

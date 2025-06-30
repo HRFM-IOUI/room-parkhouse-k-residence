@@ -55,32 +55,34 @@ export default function PostsPage() {
       try {
         const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
         const snapshot = await getDocs(q);
-        const fetched = snapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>): Post => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            title: typeof data.title === "string" ? data.title : "",
-            createdAt: data.createdAt ?? "",
-            blocks: Array.isArray(data.blocks)
-              ? data.blocks
-                  .filter(
-                    (b: Block) =>
-                      typeof b === "object" &&
-                      b !== null &&
-                      "type" in b &&
-                      "content" in b &&
-                      typeof b.type === "string" &&
-                      typeof b.content === "string" &&
-                      ["heading", "text", "image", "video"].includes(b.type)
-                  )
-                  .map((b: Block) => ({ type: b.type, content: b.content }))
-              : [],
-            image: typeof data.image === "string" ? data.image : undefined,
-            tags: Array.isArray(data.tags) ? data.tags.filter((t: any) => typeof t === "string") : [],
-            category: typeof data.category === "string" ? data.category : "uncategorized",
-            highlight: !!data.highlight,
-          };
-        });
+        const fetched = snapshot.docs.map(
+          (doc: QueryDocumentSnapshot<DocumentData>): Post => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              title: typeof data.title === "string" ? data.title : "",
+              createdAt: data.createdAt ?? "",
+              blocks: Array.isArray(data.blocks)
+                ? data.blocks
+                    .filter(
+                      (b: Block) =>
+                        typeof b === "object" &&
+                        b !== null &&
+                        "type" in b &&
+                        "content" in b &&
+                        typeof b.type === "string" &&
+                        typeof b.content === "string" &&
+                        ["heading", "text", "image", "video"].includes(b.type)
+                    )
+                    .map((b: Block) => ({ type: b.type, content: b.content }))
+                : [],
+              image: typeof data.image === "string" ? data.image : undefined,
+              tags: Array.isArray(data.tags) ? data.tags.filter((t: string) => typeof t === "string") : [],
+              category: typeof data.category === "string" ? data.category : "uncategorized",
+              highlight: !!data.highlight,
+            };
+          }
+        );
         setPosts(fetched);
       } catch (err) {
         setError("データの取得に失敗しました。もう一度お試しください。");

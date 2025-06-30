@@ -10,6 +10,7 @@ import {
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react"; // QRコード生成のインポート
+import Image from "next/image"; // 追加
 
 type ShareButtonsProps = {
   title: string;
@@ -56,12 +57,13 @@ export default function ShareButtons({ title }: ShareButtonsProps) {
           rel="noopener noreferrer"
           aria-label="Share on LINE"
         >
-          <img
+          <Image
             src="/line-icon.png"
             alt="LINE share icon"
             width={32}
             height={32}
             style={{ borderRadius: "8px" }}
+            priority // 画像の優先読み込み
           />
         </a>
         <button
@@ -69,12 +71,13 @@ export default function ShareButtons({ title }: ShareButtonsProps) {
           aria-label="Copy link"
           className="flex items-center"
         >
-          <img
+          <Image
             src="/copy-icon.png"
             alt="Copy Link"
             width={32}
             height={32}
             style={{ borderRadius: "8px" }}
+            priority // 画像の優先読み込み
           />
         </button>
         {copied && (

@@ -1,4 +1,4 @@
-"use client";
+"use client"; 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -54,15 +54,15 @@ export default function HighlightHeroCard({ post }: Props) {
   const firstImage =
     isString(post.image)
       ? post.image
-      : post.blocks?.find((b) => b.type === "image" && isString(b.content))?.content ||
+      : post.blocks?.find((b: Block) => b.type === "image" && isString(b.content))?.content ||
         DEFAULT_IMAGE;
 
   // 安全なdescription抽出
   const description =
-    post.blocks?.find((b) => b.type === "text" && isString(b.content))?.content?.slice(0, 80) || "";
+    post.blocks?.find((b: Block) => b.type === "text" && isString(b.content))?.content?.slice(0, 80) || "";
 
   // カード全体クリックでfade out後にページ遷移
-  const handleCardClick = (e: React.MouseEvent) => {
+  const handleCardClick = (e: React.MouseEvent | React.KeyboardEvent) => {
     e.preventDefault();
     setIsFading(true);
     setTimeout(() => {
@@ -86,7 +86,7 @@ export default function HighlightHeroCard({ post }: Props) {
       aria-label={`Read article: ${isString(post.title) ? post.title : ""}`}
       onClick={handleCardClick}
       onKeyDown={e => {
-        if (e.key === "Enter" || e.key === " ") handleCardClick(e as any);
+        if (e.key === "Enter" || e.key === " ") handleCardClick(e);
       }}
     >
       {/* 画像セクション */}
