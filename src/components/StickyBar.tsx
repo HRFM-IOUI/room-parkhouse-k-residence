@@ -3,24 +3,24 @@ import React, { useState, useRef, useEffect } from "react";
 import Drawermenu from "./Drawermenu";
 
 export default function StickyBar() {
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [showBar, setShowBar] = useState(true);
-  const lastScroll = useRef(0);
-  const timeoutRef = useRef<any>(null);
+  const [drawerOpen, setDrawerOpen] = useState<boolean>(false); // drawerOpenの型指定
+  const [showBar, setShowBar] = useState<boolean>(true); // showBarの型指定
+  const lastScroll = useRef<number>(0); // lastScrollの型指定
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null); // timeoutRefの型指定
 
   useEffect(() => {
     const handleScroll = () => {
       const current = window.scrollY;
       if (current > lastScroll.current && current > 32) setShowBar(false);
       else if (current < lastScroll.current) setShowBar(true);
-      clearTimeout(timeoutRef.current);
+      clearTimeout(timeoutRef.current!); // timeoutRefがnullでないことを保証
       timeoutRef.current = setTimeout(() => setShowBar(true), 210);
       lastScroll.current = current;
     };
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => {
       window.removeEventListener("scroll", handleScroll);
-      clearTimeout(timeoutRef.current);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current); // クリア
     };
   }, []);
 
@@ -70,6 +70,7 @@ export default function StickyBar() {
               </span>
             </div>
           </div>
+
           {/* ナビゲーション（PC） */}
           <nav className="hidden md:flex flex-1 gap-7 text-gray-800 font-medium text-[15.5px] items-center min-w-0">
             {["物件情報", "ライフスタイル", "施設サービス", "アクセス"].map((txt, i) => (
@@ -84,6 +85,7 @@ export default function StickyBar() {
               </a>
             ))}
           </nav>
+
           {/* CTA（PCのみ） */}
           <div className="hidden md:flex items-center gap-3 ml-8">
             <button
@@ -108,6 +110,7 @@ export default function StickyBar() {
               ログイン
             </button>
           </div>
+
           {/* MENUボタン（常時表示・モバイル右端） */}
           <button
             className="
@@ -132,6 +135,8 @@ export default function StickyBar() {
           </button>
         </div>
       </div>
+
+      {/* Drawer menu */}
       <Drawermenu open={drawerOpen} onClose={() => setDrawerOpen(false)} />
     </>
   );

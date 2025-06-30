@@ -6,11 +6,6 @@ type Props = {
 };
 
 export default function StickyHeader({ onSearchClick }: Props) {
-  // スムーススクロールでトップに戻る
-  const handleScrollTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm px-4 py-3">
       <div className="max-w-7xl mx-auto flex justify-between items-center">
@@ -19,6 +14,7 @@ export default function StickyHeader({ onSearchClick }: Props) {
           <button
             onClick={onSearchClick}
             className="px-4 py-1.5 rounded-full bg-[#192349] text-white text-sm hover:bg-[#2a3770] transition"
+            aria-label="Open Search Modal" // アクセシビリティ向上のためaria-label追加
           >
             ☮
           </button>

@@ -24,6 +24,7 @@ const CATEGORY_LIST = [
   "worldview", "uncategorized",
 ];
 
+// Block 型を定義
 type Block = {
   type: "heading" | "text" | "image" | "video";
   content: string;
@@ -63,7 +64,7 @@ export default function PostsPage() {
             blocks: Array.isArray(data.blocks)
               ? data.blocks
                   .filter(
-                    (b: any) =>
+                    (b: Block) =>
                       typeof b === "object" &&
                       b !== null &&
                       "type" in b &&
@@ -72,7 +73,7 @@ export default function PostsPage() {
                       typeof b.content === "string" &&
                       ["heading", "text", "image", "video"].includes(b.type)
                   )
-                  .map((b: any) => ({ type: b.type, content: b.content }))
+                  .map((b: Block) => ({ type: b.type, content: b.content }))
               : [],
             image: typeof data.image === "string" ? data.image : undefined,
             tags: Array.isArray(data.tags) ? data.tags.filter((t: any) => typeof t === "string") : [],
@@ -96,7 +97,6 @@ export default function PostsPage() {
   const heroPost = highlightPosts[0] || null;
   const carouselHighlightPosts = highlightPosts.slice(1);
 
-  // string型チェック追加
   const filteredPosts = posts.filter((post) => {
     const titleStr = typeof post.title === "string" ? post.title : "";
     const catStr = typeof post.category === "string" ? post.category : "";
@@ -108,10 +108,8 @@ export default function PostsPage() {
 
   return (
     <>
-      {/* スティッキーヘッダー */}
       <StickyHeader onSearchClick={() => setSearchOpen(true)} />
 
-      {/* モーダル検索 */}
       <SearchModal
         isOpen={isSearchOpen}
         onClose={() => setSearchOpen(false)}
@@ -119,7 +117,6 @@ export default function PostsPage() {
         setSearchTerm={setSearchTerm}
       />
 
-      {/* メイン記事セクション */}
       <main className="max-w-[1200px] w-full mx-auto px-3 sm:px-6 md:px-10 py-10 overflow-x-hidden">
         <h2 className="text-3xl font-extrabold text-[#192349] mb-6 tracking-tight drop-shadow">
           Latest News
@@ -130,7 +127,6 @@ export default function PostsPage() {
 
         {!loading && !error && (
           <div className="flex flex-col lg:flex-row gap-8 w-full">
-            {/* サイドバー */}
             <div className="hidden lg:block min-w-[220px] max-w-[260px] flex-shrink-0">
               <CategorySidebar
                 selected={selectedCategory}
@@ -138,9 +134,7 @@ export default function PostsPage() {
               />
             </div>
 
-            {/* メインカラム */}
             <div className="w-full min-w-0 flex flex-col">
-              {/* モバイル用カテゴリSwiper（余白調整） */}
               <div className="lg:hidden mb-6 py-2">
                 <CategorySwiper
                   categories={CATEGORY_LIST}
@@ -149,14 +143,12 @@ export default function PostsPage() {
                 />
               </div>
 
-              {/* Hero記事 */}
               {heroPost && (
                 <section className="mb-8">
                   <HighlightHeroCard post={heroPost} />
                 </section>
               )}
 
-              {/* 通常記事（2×2） */}
               <section>
                 {filteredPosts.length === 0 ? (
                   <p className="text-center text-gray-400 py-12">No articles found.</p>
@@ -165,7 +157,6 @@ export default function PostsPage() {
                 )}
               </section>
 
-              {/* カルーセル表示（2件目以降） */}
               {carouselHighlightPosts.length > 0 && (
                 <section className="mt-12">
                   <HighlightCarousel posts={carouselHighlightPosts} />

@@ -9,9 +9,13 @@ import {
 } from "react-share";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { QRCodeSVG } from "qrcode.react"; // ←ここだけ修正
+import { QRCodeSVG } from "qrcode.react"; // QRコード生成のインポート
 
-export default function ShareButtons({ title }: { title: string }) {
+type ShareButtonsProps = {
+  title: string;
+};
+
+export default function ShareButtons({ title }: ShareButtonsProps) {
   const path = usePathname();
   const baseUrl = "https://wmi-official-room.vercel.app";
   const url =
@@ -19,10 +23,9 @@ export default function ShareButtons({ title }: { title: string }) {
       ? window.location.origin + path
       : baseUrl + path;
 
-  const [copied, setCopied] = useState(false);
-  const lineShareUrl = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(
-    url
-  )}`;
+  const [copied, setCopied] = useState<boolean>(false); // copiedの型指定
+
+  const lineShareUrl = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(url)}`;
 
   const handleCopy = async () => {
     try {
@@ -55,7 +58,7 @@ export default function ShareButtons({ title }: { title: string }) {
         >
           <img
             src="/line-icon.png"
-            alt="LINE"
+            alt="LINE share icon"
             width={32}
             height={32}
             style={{ borderRadius: "8px" }}

@@ -3,10 +3,16 @@ import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 
+// Block型を定義
+type Block = {
+  type: "heading" | "text" | "image" | "video";
+  content: string;
+};
+
 type HighlightPost = {
   id: string;
   title: string;
-  blocks?: { type: string; content: string }[];
+  blocks?: Block[]; // Block型を適用
   image?: string;
   category?: string;
   createdAt: string | number | { seconds?: number };
@@ -14,6 +20,7 @@ type HighlightPost = {
 
 const DEFAULT_IMAGE = "/WMI-logo.png";
 
+// 日付フォーマット関数
 function formatDate(dateVal: string | number | { seconds?: number }): string {
   if (!dateVal) return "";
   let d: Date;

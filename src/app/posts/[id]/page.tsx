@@ -8,6 +8,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import ShareButtons from "@/components/ShareButtons";
 
+// ブログデータの型定義
 type Block = {
   type: "heading" | "text" | "image" | "video";
   content: string;
@@ -19,6 +20,7 @@ type PostData = {
   blocks?: Block[];
 };
 
+// 日付フォーマット関数
 function formatDate(dateVal: string | number | { seconds?: number }): string {
   try {
     let d: Date;
@@ -41,6 +43,7 @@ function formatDate(dateVal: string | number | { seconds?: number }): string {
   }
 }
 
+// Markdownのカスタムコンポーネント
 const MarkdownComponents = {
   table: ({ node, ...props }: any) => (
     <div className="table-scroll overflow-x-auto">
@@ -58,13 +61,14 @@ export default function PostDetailPage() {
   const postId = params?.id as string;
   const [post, setPost] = useState<PostData | null>(null);
 
+  // 投稿データの取得
   useEffect(() => {
     if (!postId) return;
     (async () => {
       const docRef = doc(db, "posts", postId);
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
-        const data = docSnap.data();
+        const data = docSnap.data() as PostData; // 型をPostDataとしてキャスト
         setPost({
           title: typeof data.title === "string" ? data.title : "",
           createdAt: data.createdAt ?? "",
@@ -105,12 +109,10 @@ export default function PostDetailPage() {
             <p className="text-xs sm:text-sm text-gray-400 text-center">
               {formatDate(post.createdAt)}
             </p>
-            {/* シェアボタン */}
             <div className="flex justify-center my-4">
               <ShareButtons title={typeof post.title === "string" ? post.title : ""} />
             </div>
           </div>
-          {/* 記事ブロック */}
           <article className="space-y-6 text-gray-900 text-base leading-relaxed">
             {Array.isArray(post.blocks) &&
               post.blocks.map((block, idx) => {

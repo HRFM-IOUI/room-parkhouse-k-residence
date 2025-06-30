@@ -1,6 +1,6 @@
-// src/components/ActionsModal.tsx
 "use client";
 import React from "react";
+import Link from "next/link"; // Linkコンポーネントのインポート
 
 type Props = {
   isOpen: boolean;
@@ -41,12 +41,12 @@ export default function ActionsModal({ isOpen, onClose, searchTerm, setSearchTer
         </button>
 
         {/* 🏠 トップページへ遷移 */}
-        <a
+        <Link
           href="/"
           className="block text-center py-2 rounded-full bg-[#e3e8fc] text-[#192349] hover:bg-[#d0d6f7] transition"
         >
-           Go to Top Page
-        </a>
+          Go to Top Page
+        </Link>
       </div>
     </div>
   );
