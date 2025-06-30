@@ -1,26 +1,129 @@
 @import "tailwindcss";
 
+/* --- グローバル変数：ゴールド系&高級配色のみ --- */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fff;
+  --background-soft: #f5f5f5;
+  --background-gradient: linear-gradient(120deg, #f8fafc 0%, #f5f5f5 70%, #e0e8eb 100%);
+  --foreground: #222;
+  --font-sans: "Noto Sans JP", "Yu Gothic", Arial, "Helvetica Neue", Helvetica, sans-serif;
+  --font-serif: "EB Garamond", "Times New Roman", Times, serif;
+  --color-gold: #d4af37;
+  --color-gold-soft: #f7e7ce;
+  --color-gold-deep: #bfa14a;
+  --color-glass: rgba(255, 255, 255, 0.70);
+  --color-diamond: rgba(245, 255, 253, 0.11);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
+/* --- ダークモードも高級感を維持 --- */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
+    --background: #15181a;
+    --background-soft: #222529;
     --foreground: #ededed;
   }
 }
 
+/* --- BODYスタイル: レスポンシブfont/ラグジュアリー余白 --- */
 body {
-  background: var(--background);
+  background: var(--background-gradient), var(--background-soft);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  font-feature-settings: "palt";
+  letter-spacing: 0.01em;
+  line-height: 1.7;
+  font-size: clamp(15px, 4vw, 17px);  /* レスポンシブ */
+  min-height: 100vh;
+  transition: background 0.6s cubic-bezier(.7,.1,.5,1);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
+
+/* --- 選択範囲もゴールドの気品で --- */
+::selection {
+  background: var(--color-gold);
+  color: #fff;
+}
+
+/* --- aタグ: ゴールドアクセント／下線高級感 --- */
+a {
+  color: var(--color-gold);
+  transition: color 0.16s;
+  text-underline-offset: 2.5px;
+  text-decoration-thickness: 1.4px;
+  text-decoration-color: var(--color-gold-soft);
+}
+a:hover, a:focus {
+  color: var(--color-gold-deep);
+  text-shadow: 0 1px 6px #fffbe6bb;
+  text-decoration: underline;
+}
+
+/* --- カード/ボックス/ガラス風汎用クラス --- */
+.card, .box, .glass {
+  background: var(--color-glass);
+  border-radius: 1.2rem;
+  box-shadow: 0 8px 32px 0 rgba(180,180,180,0.14), 0 2px 12px 0 rgba(44,72,125,0.07);
+  backdrop-filter: blur(7px);
+  border: 1px solid #ececec;
+}
+
+/* --- ダイヤ/グラス系背景エフェクト --- */
+.bg-diamond {
+  background: linear-gradient(135deg, #f8fafc 0%, #fffbe6 45%, #ede9d6 100%);
+}
+
+/* --- スクロールバー非表示（高級サイト風） --- */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* --- グラデーション移動アニメ（光沢感用） --- */
+@keyframes gradient-move {
+  0% { background-position: 0% 50% }
+  100% { background-position: 100% 50% }
+}
+.animate-gradient-move {
+  background-size: 200% 200%;
+  animation: gradient-move 3s linear infinite alternate;
+}
+
+/* --- Glint（光線）アニメ：ゴールド/ホワイト系 --- */
+@keyframes glint {
+  0% { transform: translateX(-60px) rotate(-3deg); opacity: 0.2; }
+  15% { opacity: 0.88; }
+  70% { opacity: 0.6; }
+  100% { transform: translateX(340px) rotate(-3deg); opacity: 0.05; }
+}
+.animate-glint {
+  animation: glint 3.4s cubic-bezier(0.65,0,0.35,1) infinite;
+}
+
+/* --- フォント調整（serif高級感パーツ用） --- */
+.font-serif-lux {
+  font-family: "EB Garamond", "Playfair Display", "Noto Serif JP", serif;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+.font-gold {
+  color: var(--color-gold);
+  text-shadow: 0 1px 7px #fffbe6cc;
+}
+
+.font-glass {
+  color: #fff;
+  text-shadow: 0 1px 6px #fffbe6aa, 0 0.5px 1px #d4af3740;
+}
+
+/* --- レスポンシブ調整例（大枠） --- */
+@media (max-width: 700px) {
+  body {
+    font-size: 15px;
+    padding: 0 2vw;
+  }
+  .card, .box, .glass {
+    border-radius: 0.9rem;
+    padding: 1.2em 1em;
+  }
+}
+
