@@ -20,7 +20,10 @@
     ],
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+    // 以下の2行を追加します
+    "noUnusedLocals": false,  // 未使用のローカル変数の警告を無視
+    "noUnusedParameters": false  // 未使用のパラメータの警告を無視
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
   "exclude": ["node_modules"]
