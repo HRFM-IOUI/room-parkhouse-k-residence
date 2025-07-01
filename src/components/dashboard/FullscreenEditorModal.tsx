@@ -167,7 +167,7 @@ export default function FullscreenEditorModal({
         if (!ref) continue;
         const canvas = await html2canvas(ref, {
           scale: 2,
-          background: "#ffffff",
+          backgroundColor: "#ffffff",
           useCORS: true,
           logging: false,
         });
