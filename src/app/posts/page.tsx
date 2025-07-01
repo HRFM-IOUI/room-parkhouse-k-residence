@@ -18,13 +18,28 @@ import CategorySidebar from "@/components/CategorySidebar";
 import CategorySwiper from "@/components/CategorySwiper";
 import ArticleGrid from "@/components/ArticleGrid";
 
+// 英語配列
 const CATEGORY_LIST = [
   "vision", "specs", "announcement", "usecase", "research",
   "culture", "technology", "education", "policy", "philosophy",
-  "worldview", "uncategorized",
+  "worldview", "uncategorized"
 ];
 
-// Block 型を定義
+const CATEGORY_MAP: Record<string, string> = {
+  vision: "ビジョン",
+  specs: "仕様",
+  announcement: "お知らせ",
+  usecase: "活用事例",
+  research: "調査",
+  culture: "文化",
+  technology: "技術",
+  education: "教育",
+  policy: "方針",
+  philosophy: "理念",
+  worldview: "世界観",
+  uncategorized: "未分類",
+};
+
 type Block = {
   type: "heading" | "text" | "image" | "video";
   content: string;
@@ -119,29 +134,61 @@ export default function PostsPage() {
         setSearchTerm={setSearchTerm}
       />
 
-      <main className="max-w-[1200px] w-full mx-auto px-3 sm:px-6 md:px-10 py-10 overflow-x-hidden">
-        <h2 className="text-3xl font-extrabold text-[#192349] mb-6 tracking-tight drop-shadow">
-          Latest News
+      <main
+        className="
+          max-w-[1200px] w-full mx-auto
+          px-3 sm:px-6 md:px-10 py-12
+          overflow-x-hidden
+          bg-gradient-to-br from-[#fdfbf7] via-[#f5f4eb] to-[#e9e3cb]
+          rounded-3xl shadow-2xl border border-[#ece2c1]/60
+        "
+        style={{
+          backdropFilter: "blur(9px)",
+          boxShadow: "0 6px 48px 0 #ecd98b25, 0 1px 8px 0 #fffbe644",
+          minHeight: "70vh",
+        }}
+      >
+        <h2
+          className="
+            text-3xl sm:text-4xl font-extrabold mb-8 tracking-tight
+            text-[#bfa14a] drop-shadow-lg
+          "
+          style={{
+            fontFamily: '"Playfair Display", "Noto Serif JP", serif',
+            letterSpacing: "0.04em",
+            textShadow: "0 3px 18px #fffbe633, 0 0px 2px #ecd98b",
+          }}
+        >
+          最新記事
         </h2>
 
-        {loading && <p className="text-center text-gray-500 py-12">Loading posts...</p>}
+        {loading && <p className="text-center text-gray-500 py-12">記事を読み込み中...</p>}
         {error && <p className="text-center text-red-500 py-12">{error}</p>}
 
         {!loading && !error && (
           <div className="flex flex-col lg:flex-row gap-8 w-full">
-            <div className="hidden lg:block min-w-[220px] max-w-[260px] flex-shrink-0">
+            {/* サイドバー */}
+            <div className="
+              hidden lg:block min-w-[220px] max-w-[260px] flex-shrink-0
+              rounded-2xl bg-white/65 border border-[#ecd98b]/30 shadow-lg
+              backdrop-blur-md py-8 px-4 mr-3
+            ">
               <CategorySidebar
+                categories={CATEGORY_LIST}
                 selected={selectedCategory}
                 setSelected={setSelectedCategory}
+                categoryMap={CATEGORY_MAP}
               />
             </div>
 
+            {/* メインエリア */}
             <div className="w-full min-w-0 flex flex-col">
               <div className="lg:hidden mb-6 py-2">
                 <CategorySwiper
                   categories={CATEGORY_LIST}
                   selected={selectedCategory}
                   setSelected={setSelectedCategory}
+                  categoryMap={CATEGORY_MAP}
                 />
               </div>
 
@@ -153,7 +200,7 @@ export default function PostsPage() {
 
               <section>
                 {filteredPosts.length === 0 ? (
-                  <p className="text-center text-gray-400 py-12">No articles found.</p>
+                  <p className="text-center text-gray-400 py-12">該当する記事がありません。</p>
                 ) : (
                   <ArticleGrid posts={filteredPosts} />
                 )}
