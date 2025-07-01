@@ -7,6 +7,20 @@ type Props = {
   onClose: () => void;
 };
 
+type MenuItem = {
+  label: string;
+  color: string;
+  path?: string; // パスがあれば自動遷移
+};
+
+const menuItems: MenuItem[] = [
+  { label: "ログイン", path: "/login", color: "linear-gradient(100deg,#fffbe6 0%,#fff8dc 90%)" },
+  { label: "イベント", color: "linear-gradient(100deg,#f4ede2 0%,#fcf6ea 100%)" },
+  { label: "施設・サービス", color: "linear-gradient(90deg,#f2efdb 0%,#ebe2ca 100%)" },
+  { label: "管理組合", color: "linear-gradient(100deg,#faf4e0 0%,#f8ecd8 100%)" },
+  { label: "NEWS一覧", path: "/posts", color: "linear-gradient(90deg,#f7ead9 0%,#efe1c9 100%)" },
+];
+
 export default function Drawermenu({ open, onClose }: Props) {
   const router = useRouter();
 
@@ -21,14 +35,6 @@ export default function Drawermenu({ open, onClose }: Props) {
     };
   }, [open]);
 
-  const menuItems = [
-    { label: "ログイン", color: "linear-gradient(100deg,#fffbe6 0%,#fff8dc 90%)" },
-    { label: "イベント", color: "linear-gradient(100deg,#f4ede2 0%,#fcf6ea 100%)" },
-    { label: "施設・サービス", color: "linear-gradient(90deg,#f2efdb 0%,#ebe2ca 100%)" },
-    { label: "管理組合", color: "linear-gradient(100deg,#faf4e0 0%,#f8ecd8 100%)" },
-    { label: "NEWS一覧", color: "linear-gradient(90deg,#f7ead9 0%,#efe1c9 100%)" }, // ここを押すと遷移
-  ];
-
   return (
     <div
       className={`
@@ -41,7 +47,6 @@ export default function Drawermenu({ open, onClose }: Props) {
         backdropFilter: "blur(12px)",
       }}
     >
-      {/* ドロワーの内容自体をスクロール可にする */}
       <div className="relative flex-1 overflow-y-auto overscroll-contain max-h-screen">
         {/* 閉じるボタン */}
         <button
@@ -100,16 +105,18 @@ export default function Drawermenu({ open, onClose }: Props) {
                 border border-[#e8dab3] transition-all hover:scale-105
                 cursor-pointer
                 w-full sm:w-auto
-                ${item.label === "NEWS一覧" ? "hover:bg-[#f7ecd7]/70" : ""}
+                ${item.path ? "hover:bg-[#f7ecd7]/70" : ""}
               `}
               style={{
                 background: item.color,
                 color: "#bfa15a",
               }}
+              tabIndex={item.path ? 0 : -1}
+              role={item.path ? "button" : undefined}
               onClick={() => {
-                if (item.label === "NEWS一覧") {
-                  router.push("/posts");
-                  onClose(); // ドロワーも閉じる
+                if (item.path) {
+                  router.push(item.path);
+                  onClose();
                 }
               }}
             >

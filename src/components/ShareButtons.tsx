@@ -1,7 +1,5 @@
 "use client";
 import {
-  TwitterShareButton,
-  TwitterIcon,
   LinkedinShareButton,
   LinkedinIcon,
   FacebookShareButton,
@@ -9,8 +7,8 @@ import {
 } from "react-share";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { QRCodeSVG } from "qrcode.react"; // QRコード生成のインポート
-import Image from "next/image"; // 追加
+import { QRCodeSVG } from "qrcode.react";
+import Image from "next/image";
 
 type ShareButtonsProps = {
   title: string;
@@ -18,13 +16,13 @@ type ShareButtonsProps = {
 
 export default function ShareButtons({ title }: ShareButtonsProps) {
   const path = usePathname();
-  const baseUrl = "https://wmi-official-room.vercel.app";
+  const baseUrl = "https://www.the-parkhouse-kamishakujii-residence-official.site/";
   const url =
     typeof window !== "undefined"
       ? window.location.origin + path
       : baseUrl + path;
 
-  const [copied, setCopied] = useState<boolean>(false); // copiedの型指定
+  const [copied, setCopied] = useState<boolean>(false);
 
   const lineShareUrl = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(url)}`;
 
@@ -38,13 +36,28 @@ export default function ShareButtons({ title }: ShareButtonsProps) {
     }
   };
 
+  // --- ここがX（旧Twitter）シェアボタン ---
+  const twitterShareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}`;
+
   return (
     <div className="flex flex-col items-center gap-2 my-5">
       <div className="flex flex-wrap gap-2 justify-center items-center">
         <span className="text-xs text-gray-500 mr-1">Share:</span>
-        <TwitterShareButton url={url} title={title}>
-          <TwitterIcon size={32} round />
-        </TwitterShareButton>
+        <a
+          href={twitterShareUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Share on X (Twitter)"
+        >
+          <Image
+            src="/svg/logo-black.png"
+            alt="Share on X"
+            width={32}
+            height={32}
+            style={{ borderRadius: "8px" }}
+            priority
+          />
+        </a>
         <LinkedinShareButton url={url} title={title}>
           <LinkedinIcon size={32} round />
         </LinkedinShareButton>
@@ -63,7 +76,7 @@ export default function ShareButtons({ title }: ShareButtonsProps) {
             width={32}
             height={32}
             style={{ borderRadius: "8px" }}
-            priority // 画像の優先読み込み
+            priority
           />
         </a>
         <button
@@ -77,7 +90,7 @@ export default function ShareButtons({ title }: ShareButtonsProps) {
             width={32}
             height={32}
             style={{ borderRadius: "8px" }}
-            priority // 画像の優先読み込み
+            priority
           />
         </button>
         {copied && (
