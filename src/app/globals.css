@@ -158,3 +158,12 @@ body.theme-light a {
 
 /* 必要ならh1,h2,pなども追記OK */
 
+/* --- Accessibility Panel用ゴールド点滅アニメ --- */
+@keyframes goldPulse {
+  0%   { box-shadow: 0 6px 28px #ecd98b44, 0 1.5px 8px 0 #fffbe680; opacity: 1; }
+  60%  { box-shadow: 0 12px 42px #ecd98baa, 0 3px 14px 0 #ffe39699; opacity: 0.92; }
+  100% { box-shadow: 0 6px 28px #ecd98b44, 0 1.5px 8px 0 #fffbe680; opacity: 1; }
+}
+.animate-gold-pulse {
+  animation: goldPulse 2.8s ease-in-out infinite;
+}
