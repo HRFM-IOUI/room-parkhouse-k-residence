@@ -5,7 +5,7 @@ import NoteEditor from "../editor/NoteEditor";
 import GenkouViewer from "../editor/GenkouViewer";
 import EditorControlButton from "../editor/EditorControlButton";
 import EditorControlModal from "../editor/EditorControlModal";
-import html2canvas from "html2canvas";
+import html2canvas from "html2canvas"; // これで関数として呼び出せる
 import jsPDF from "jspdf";
 import { Toaster, toast } from "react-hot-toast";
 
