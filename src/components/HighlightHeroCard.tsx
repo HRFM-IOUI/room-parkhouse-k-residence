@@ -18,7 +18,7 @@ type Post = {
   createdAt: string | number | { seconds?: number };
 };
 
-const DEFAULT_IMAGE = "/wmLOGO.png";
+const DEFAULT_IMAGE = "/phoc.png";
 
 // 型ガード関数
 function isString(val: any): val is string {
@@ -80,7 +80,7 @@ export default function HighlightHeroCard({ post }: Props) {
         hover:shadow-2xl hover:-translate-y-0.5 transition-all duration-200 ease-in-out
         min-h-[200px] cursor-pointer
       `}
-      style={{ pointerEvents: isFading ? "none" : "auto" }}
+      style={{ pointerEvents: isFading ? "none" : "auto" } as any} 
       tabIndex={0}
       role="button"
       aria-label={`Read article: ${isString(post.title) ? post.title : ""}`}
