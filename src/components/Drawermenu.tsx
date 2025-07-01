@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 type Props = {
   open: boolean;
@@ -7,6 +8,8 @@ type Props = {
 };
 
 export default function Drawermenu({ open, onClose }: Props) {
+  const router = useRouter();
+
   useEffect(() => {
     if (open) {
       document.body.style.overflow = "hidden";
@@ -17,6 +20,14 @@ export default function Drawermenu({ open, onClose }: Props) {
       document.body.style.overflow = "";
     };
   }, [open]);
+
+  const menuItems = [
+    { label: "ログイン", color: "linear-gradient(100deg,#fffbe6 0%,#fff8dc 90%)" },
+    { label: "イベント", color: "linear-gradient(100deg,#f4ede2 0%,#fcf6ea 100%)" },
+    { label: "施設・サービス", color: "linear-gradient(90deg,#f2efdb 0%,#ebe2ca 100%)" },
+    { label: "管理組合", color: "linear-gradient(100deg,#faf4e0 0%,#f8ecd8 100%)" },
+    { label: "NEWS一覧", color: "linear-gradient(90deg,#f7ead9 0%,#efe1c9 100%)" }, // ここを押すと遷移
+  ];
 
   return (
     <div
@@ -80,25 +91,26 @@ export default function Drawermenu({ open, onClose }: Props) {
           w-full flex flex-wrap justify-center gap-6 sm:gap-8 mt-10 mb-7
           px-2 sm:px-0
         ">
-          {[
-            { label: "ログイン", color: "linear-gradient(100deg,#fffbe6 0%,#fff8dc 90%)" },
-            { label: "イベント", color: "linear-gradient(100deg,#f4ede2 0%,#fcf6ea 100%)" },
-            { label: "施設・サービス", color: "linear-gradient(90deg,#f2efdb 0%,#ebe2ca 100%)" },
-            { label: "管理組合", color: "linear-gradient(100deg,#faf4e0 0%,#f8ecd8 100%)" },
-            { label: "管理室より", color: "linear-gradient(90deg,#f7ead9 0%,#efe1c9 100%)" },
-          ].map((item, i) => (
+          {menuItems.map((item, i) => (
             <div
               key={i}
-              className="
+              className={`
                 flex flex-col items-center justify-center
                 shadow-xl rounded-2xl px-8 py-6 min-w-[135px] min-h-[68px] font-semibold text-[16px]
                 border border-[#e8dab3] transition-all hover:scale-105
                 cursor-pointer
                 w-full sm:w-auto
-              "
+                ${item.label === "NEWS一覧" ? "hover:bg-[#f7ecd7]/70" : ""}
+              `}
               style={{
                 background: item.color,
                 color: "#bfa15a",
+              }}
+              onClick={() => {
+                if (item.label === "NEWS一覧") {
+                  router.push("/posts");
+                  onClose(); // ドロワーも閉じる
+                }
               }}
             >
               {item.label}
