@@ -18,7 +18,7 @@ type HighlightPost = {
   createdAt: string | number | { seconds?: number };
 };
 
-const DEFAULT_IMAGE = "/WMI-logo.png";
+const DEFAULT_IMAGE = "/phoc.png";
 
 // 日付フォーマット関数
 function formatDate(dateVal: string | number | { seconds?: number }): string {

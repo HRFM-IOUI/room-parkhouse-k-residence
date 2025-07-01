@@ -46,7 +46,7 @@ export default function ArticleGrid({ posts, isSearchResult = false }: Props) {
       firstImage?.content ||
       post.image ||
       (firstVideo ? "/video-thumbnail.png" : undefined) ||
-      "/WMI-logo.png"
+      "/phoc.png"
     );
   };
 
