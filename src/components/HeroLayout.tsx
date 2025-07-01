@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import StickyBar from "@/components/StickyBar";
 import Header from "@/components/Header";
 import HeroBanner from "@/components/HeroBanner";
-import AccessibilityPanel from "@/components/AccessibilityPanel";
+import AccessibilityFloatingButton from "@/components/AccessibilityFloatingButton";
 import AccessibilityModal from "@/components/AccessibilityModal";
 import FooterSection from "@/components/FooterSection";
 
@@ -28,10 +28,12 @@ export default function HeroLayout() {
       {/* 3. Heroバナー */}
       <div className="mb-10 relative">
         <HeroBanner />
-        {/* パネルとモーダルをProps正しく揃えて呼ぶ */}
-        <AccessibilityPanel onOpen={() => setAccessOpen(true)} />
-        <AccessibilityModal open={accessOpen} onClose={() => setAccessOpen(false)} />
+        {/* ← ここにはもうPanel入れません */}
       </div>
+
+      {/* 左下アクセシビリティフローティングボタン */}
+      <AccessibilityFloatingButton onOpen={() => setAccessOpen(true)} />
+      <AccessibilityModal open={accessOpen} onClose={() => setAccessOpen(false)} />
 
       {/* 4. フッター */}
       <FooterSection />
