@@ -56,9 +56,9 @@ export default function FooterSection() {
             <a href="#">アクセシビリティ</a>
             <a href="#">サイトメンテナンス</a>
             <a href="#">サイトマップ</a>
-            <a href="#">ご意見・ご要望</a>
             <a href="#">お問い合わせ</a>
-            <a href="#">企業グループ</a>
+            <a href="#">管理組合</a>
+            <a href="#">理事会・検討委員会</a>
           </div>
         </div>
       </div>
