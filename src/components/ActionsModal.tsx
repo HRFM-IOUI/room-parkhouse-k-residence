@@ -21,7 +21,7 @@ export default function ActionsModal({ isOpen, onClose, searchTerm, setSearchTer
           ×
         </button>
 
-        <h2 className="text-lg font-semibold text-[#192349] mb-4">Quick Actions</h2>
+        <h2 className="text-lg font-semibold text-[#192349] mb-4">簡単クイック操作</h2>
 
         {/* 🔍 検索 */}
         <input
@@ -37,7 +37,7 @@ export default function ActionsModal({ isOpen, onClose, searchTerm, setSearchTer
           onClick={scrollTop}
           className="w-full mb-3 py-2 rounded-full bg-gray-100 text-[#192349] hover:bg-gray-200"
         >
-          ⬆ Back to Top
+          ⬆ ページ上部へ
         </button>
 
         {/* 🏠 トップページへ遷移 */}
@@ -45,7 +45,7 @@ export default function ActionsModal({ isOpen, onClose, searchTerm, setSearchTer
           href="/"
           className="block text-center py-2 rounded-full bg-[#e3e8fc] text-[#192349] hover:bg-[#d0d6f7] transition"
         >
-          Go to Top Page
+          トップページに戻る
         </Link>
       </div>
     </div>
