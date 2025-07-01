@@ -170,7 +170,7 @@ export default function FullscreenEditorModal({
           backgroundColor: "#ffffff",
           useCORS: true,
           logging: false,
-        });
+        } as any); 
         const imgData = canvas.toDataURL("image/png");
         const pageWidth = pdf.internal.pageSize.getWidth();
         const pageHeight = pdf.internal.pageSize.getHeight();
