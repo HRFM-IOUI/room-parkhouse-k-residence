@@ -117,6 +117,7 @@ export default function StickyBar() {
                 text-[#d4af37] font-semibold bg-white/95 hover:bg-[#fffbe6]/70 transition-all text-[14px]
                 min-w-0
               "
+              onClick={() => router.push("/contact")}
             >
               お問い合わせ
             </button>
