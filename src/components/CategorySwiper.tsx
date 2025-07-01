@@ -12,7 +12,7 @@ const DEFAULT_CATEGORY_MAP: { [key: string]: string } = {
   education: "季節イベント",
   policy: "環境美化",
   philosophy: "今期理事",
-  worldview: "その他",  
+  worldview: "etc",  
 };
 
 type Props = {
