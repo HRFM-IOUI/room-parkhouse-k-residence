@@ -1,46 +1,153 @@
 "use client";
-import React, { useEffect, useState, useRef } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { ParallaxProvider, Parallax } from "react-scroll-parallax";
-import { motion } from "framer-motion";
 
-// 画像パスは必ずファイル名と完全一致！（jpg→webpにしても同じ）
 const slides = [
-  { img1: "/0001phoc-herobanner.webp" },
-  { img1: "/IMG_5614.webp" },
-  { img1: "/IMG_5615.webp" },
+  { img: "/0001phoc-herobanner.webp" },
+  { img: "/IMG_5614.webp" },
+  { img: "/IMG_5615.webp" },
 ];
 
-type NewsItem = {
-  date: string;
-  title: string;
-};
-
-const news: NewsItem[] = [
+const news = [
   { date: "2025.06.30", title: "新サービス開始のお知らせ" },
   { date: "2025.06.25", title: "サイトリニューアルしました" },
   { date: "2025.06.20", title: "特別イベント開催情報" },
 ];
 
-export default function HeroBanner() {
-  const [current, setCurrent] = useState(0);
-  const [fade, setFade] = useState(true);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+const DISPLAY_TIME = 5200;
+const DISSOLVE_TIME = 2000;
 
-  // フェード切替の制御
+export default function HeroBanner() {
+  const [current, setCurrent] = useState<number>(0);
+  const [next, setNext] = useState<number | null>(null);
+  const [allLoaded, setAllLoaded] = useState(false);
+  const [progress, setProgress] = useState<number>(1);
+  const [showImg, setShowImg] = useState(true);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const imgsRef = useRef<(HTMLImageElement | null)[]>([]);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const rafRef = useRef<number | null>(null);
+
+  // 画像事前ロード＋onload監視
   useEffect(() => {
-    timeoutRef.current = setTimeout(() => setFade(false), 4500);
-    const next = setTimeout(() => {
-      setFade(true);
-      setCurrent((prev) => (prev + 1) % slides.length);
-    }, 5200);
+    let loadedCount = 0;
+    imgsRef.current = slides.map(({ img }, idx) => {
+      const el = new window.Image();
+      el.src = img;
+      el.onload = () => {
+        loadedCount += 1;
+        if (loadedCount === slides.length) setAllLoaded(true);
+      };
+      el.onerror = () => setAllLoaded(true); // エラー時も続行
+      return el;
+    });
+  }, []);
+
+  // 初回だけimgタグで爆速レンダ
+  useEffect(() => {
+    if (allLoaded) {
+      // imgタグ→canvas切り替え
+      setTimeout(() => setShowImg(false), 80);
+    }
+  }, [allLoaded]);
+
+  // クロスディゾルブアニメ
+  useEffect(() => {
+    if (next === null || showImg) return;
+    let start: number | null = null;
+    setProgress(0);
+
+    function animate(now: number) {
+      if (!start) start = now;
+      let t = (now - start) / DISSOLVE_TIME;
+      if (t > 1) t = 1;
+      setProgress(t);
+
+      const canvas = canvasRef.current;
+      const ctx = canvas?.getContext("2d");
+      const img1 = imgsRef.current[current];
+      const img2 = imgsRef.current[next!];
+      const [w, h] = getCanvasSize();
+      if (canvas && ctx && img1 && img2) {
+        canvas.width = w;
+        canvas.height = h;
+        ctx.globalAlpha = 1 - t;
+        ctx.drawImage(img1, 0, 0, w, h);
+        ctx.globalAlpha = t;
+        ctx.drawImage(img2, 0, 0, w, h);
+        ctx.globalAlpha = 1;
+      }
+      if (t < 1) {
+        rafRef.current = requestAnimationFrame(animate);
+      } else {
+        setCurrent(next!);
+        setNext(null);
+        setProgress(1);
+      }
+    }
+    rafRef.current = requestAnimationFrame(animate);
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [next, current, showImg]);
+
+  // タイマー管理
+  useEffect(() => {
+    if (next !== null || showImg) return;
+    timeoutRef.current = setTimeout(() => {
+      setNext((current + 1) % slides.length);
+    }, DISPLAY_TIME);
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      clearTimeout(next);
     };
-  }, [current]);
+  }, [current, next, showImg]);
 
-  const slide = slides[current];
+  // スマホ対応サイズ補正
+  function getCanvasSize() {
+    if (typeof window === "undefined") return [1440, 440];
+    if (window.innerWidth < 640) return [window.innerWidth * 0.97, window.innerWidth * 0.45];
+    return [1440, 440];
+  }
 
+  // canvasにcurrent描画
+  useEffect(() => {
+    if (next !== null || showImg) return;
+    const [w, h] = getCanvasSize();
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    const img = imgsRef.current[current];
+    if (canvas && ctx && img) {
+      canvas.width = w;
+      canvas.height = h;
+      ctx.clearRect(0, 0, w, h);
+      ctx.globalAlpha = 1;
+      ctx.drawImage(img, 0, 0, w, h);
+    }
+  }, [current, next, showImg]);
+
+  // リサイズ時の再描画
+  useEffect(() => {
+    function handleResize() {
+      if (next !== null || showImg) return;
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const [w, h] = getCanvasSize();
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      const img = imgsRef.current[current];
+      if (ctx && img) {
+        ctx.clearRect(0, 0, w, h);
+        ctx.globalAlpha = 1;
+        ctx.drawImage(img, 0, 0, w, h);
+      }
+    }
+    window.addEventListener("resize", handleResize);
+    handleResize();
+    return () => window.removeEventListener("resize", handleResize);
+  }, [current, next, showImg]);
+
+  // レンダリング
   return (
     <ParallaxProvider>
       <section
@@ -68,22 +175,39 @@ export default function HeroBanner() {
         </Parallax>
 
         <div className="w-full max-w-[95vw] sm:max-w-[1320px] mx-auto px-2 relative z-20">
-          {/* PC：画像＋NEWS重なり・高さぴったり */}
-          <div className="relative w-full aspect-[16/8] sm:aspect-[16/7] rounded-[1.5rem] shadow-xl overflow-hidden border border-[#ecd98b]/40 bg-white/60 backdrop-blur-lg">
-            {/* Hero画像（background-image × motion.div フェード） */}
-            <motion.div
-              className="absolute inset-0 w-full h-full bg-cover bg-center rounded-[1.5rem]"
-              style={{
-                backgroundImage: `url(${slide.img1})`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-                opacity: fade ? 1 : 0,
-                transition: "opacity 0.9s cubic-bezier(.6,.2,.25,1)",
-                willChange: "opacity",
-              }}
-            />
-
-            {/* PCのみ右サイドにNEWS欄・高さをぴったり揃える */}
+          <div className="relative w-full aspect-[16/8] sm:aspect-[16/7] rounded-[1.5rem] shadow-xl overflow-hidden border border-[#ecd98b]/40 bg-white/60 backdrop-blur-lg flex items-center justify-center">
+            {showImg ? (
+              <img
+                src={slides[current].img}
+                alt="hero"
+                style={{
+                  display: "block",
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  borderRadius: "1.5rem",
+                  background: "#fffbe6",
+                  transition: "box-shadow .25s cubic-bezier(.7,.23,.2,1)",
+                }}
+                draggable={false}
+              />
+            ) : (
+              <canvas
+                ref={canvasRef}
+                width={getCanvasSize()[0]}
+                height={getCanvasSize()[1]}
+                style={{
+                  display: "block",
+                  width: "100%",
+                  height: "100%",
+                  borderRadius: "1.5rem",
+                  objectFit: "cover",
+                  background: "#fffbe6",
+                  transition: "box-shadow .25s cubic-bezier(.7,.23,.2,1)",
+                }}
+              />
+            )}
+            {/* NEWS欄（PC重なり/スマホ下段） */}
             <div className="hidden sm:flex">
               <div
                 className="
@@ -94,7 +218,7 @@ export default function HeroBanner() {
                   border-l border-[#ecd98b]/30
                   shadow-xl
                   backdrop-blur-[8px]
-                  z-20
+                  z-30
                 "
                 style={{
                   boxShadow: "0 8px 38px 0 rgba(212,175,55,0.13)",
@@ -107,7 +231,7 @@ export default function HeroBanner() {
                   </div>
                 </div>
                 <ul className="space-y-4 text-[15.5px] text-[#594f28]">
-                  {news.map((item: NewsItem, idx: number) => (
+                  {news.map((item, idx) => (
                     <li key={idx} className="flex flex-col">
                       <span className="text-xs text-[#bfa14a] mb-1 font-mono">
                         {item.date}
@@ -137,7 +261,7 @@ export default function HeroBanner() {
                 </div>
               </div>
               <ul className="space-y-4 text-[15.2px] text-[#594f28]">
-                {news.map((item: NewsItem, idx: number) => (
+                {news.map((item, idx) => (
                   <li key={idx} className="flex flex-col">
                     <span className="text-xs text-[#bfa14a] mb-1 font-mono">
                       {item.date}
