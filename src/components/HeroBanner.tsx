@@ -1,8 +1,9 @@
 "use client";
 import React, { useRef, useEffect, useState } from "react";
 import { ParallaxProvider, Parallax } from "react-scroll-parallax";
+import { getFirestore, collection, query, orderBy, limit, getDocs } from "firebase/firestore";
+import { app as firebaseApp } from "@/firebase"; // ←firebase初期化ファイルのパスを合わせてね
 
-// ブランド感Serif推奨（Google Fonts推奨）
 const brandFont = '"Playfair Display", "Noto Serif JP", serif';
 
 const slides = [
@@ -11,16 +12,17 @@ const slides = [
   { img: "/IMG_5615.webp" },
 ];
 
-const news = [
-  { date: "2025.07.02", title: "サイトリニューアルしました" },
-  { date: "2025.07.01", title: "公式サイトリニューアル" },
-  { date: "2025.06.30", title: "新サービス開始のお知らせ" },
-];
-
 const DISPLAY_TIME = 5200;
 const DISSOLVE_TIME = 2000;
 
+type NewsItem = {
+  id: string;
+  date: string;   // yyyy.mm.dd
+  title: string;
+};
+
 export default function HeroBanner() {
+  const [news, setNews] = useState<NewsItem[]>([]);
   const [current, setCurrent] = useState<number>(0);
   const [next, setNext] = useState<number | null>(null);
   const [allLoaded, setAllLoaded] = useState(false);
@@ -30,6 +32,38 @@ export default function HeroBanner() {
   const imgsRef = useRef<(HTMLImageElement | null)[]>([]);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const rafRef = useRef<number | null>(null);
+
+  // FirestoreからNEWSを取得
+  useEffect(() => {
+    const fetchNews = async () => {
+      try {
+        const db = getFirestore(firebaseApp);
+        const postsRef = collection(db, "posts");
+        const q = query(postsRef, orderBy("createdAt", "desc"), limit(3));
+        const snapshot = await getDocs(q);
+
+        const fetched = snapshot.docs.map((doc) => {
+          const data = doc.data();
+          let dateStr = "";
+          if (data.createdAt?.toDate) {
+            const d = data.createdAt.toDate();
+            dateStr = `${d.getFullYear()}.${(d.getMonth() + 1)
+              .toString()
+              .padStart(2, "0")}.${d.getDate().toString().padStart(2, "0")}`;
+          }
+          return {
+            id: doc.id,
+            date: dateStr,
+            title: data.title ?? "(タイトル未設定)",
+          };
+        });
+        setNews(fetched);
+      } catch {
+        setNews([]);
+      }
+    };
+    fetchNews();
+  }, []);
 
   // 画像事前ロード＋onload監視
   useEffect(() => {
@@ -41,12 +75,11 @@ export default function HeroBanner() {
         loadedCount += 1;
         if (loadedCount === slides.length) setAllLoaded(true);
       };
-      el.onerror = () => setAllLoaded(true); // エラー時も続行
+      el.onerror = () => setAllLoaded(true);
       return el;
     });
   }, []);
 
-  // 初回だけimgタグで爆速レンダ
   useEffect(() => {
     if (allLoaded) {
       setTimeout(() => setShowImg(false), 80);
@@ -93,7 +126,6 @@ export default function HeroBanner() {
     };
   }, [next, current, showImg]);
 
-  // タイマー管理
   useEffect(() => {
     if (next !== null || showImg) return;
     timeoutRef.current = setTimeout(() => {
@@ -104,14 +136,12 @@ export default function HeroBanner() {
     };
   }, [current, next, showImg]);
 
-  // スマホ対応サイズ補正
   function getCanvasSize() {
     if (typeof window === "undefined") return [1440, 440];
     if (window.innerWidth < 640) return [window.innerWidth * 0.97, window.innerWidth * 0.45];
     return [1440, 440];
   }
 
-  // canvasにcurrent描画
   useEffect(() => {
     if (next !== null || showImg) return;
     const [w, h] = getCanvasSize();
@@ -127,7 +157,6 @@ export default function HeroBanner() {
     }
   }, [current, next, showImg]);
 
-  // リサイズ時の再描画
   useEffect(() => {
     function handleResize() {
       if (next !== null || showImg) return;
@@ -149,7 +178,6 @@ export default function HeroBanner() {
     return () => window.removeEventListener("resize", handleResize);
   }, [current, next, showImg]);
 
-  // --- レンダリング ---
   return (
     <ParallaxProvider>
       <section
@@ -174,8 +202,6 @@ export default function HeroBanner() {
             <rect x="1250" y="90" width="160" height="8" rx="4" fill="#fffbe6" opacity="0.10" />
           </svg>
         </Parallax>
-
-        {/* 中央ビジュアル */}
         <div className="w-full max-w-[96vw] sm:max-w-[1340px] mx-auto px-2 relative z-20">
           <div className="relative w-full aspect-[16/8] sm:aspect-[16/7] rounded-[2.2rem] shadow-2xl overflow-visible border border-[#ecd98b]/40 bg-white/60 backdrop-blur-2xl flex items-center justify-center">
             {/* 金の光沢縁 */}
@@ -266,22 +292,26 @@ export default function HeroBanner() {
                   </div>
                 </div>
                 <ul className="space-y-5 text-[16.2px] text-[#594f28]">
-                  {news.map((item, idx) => (
-                    <li key={idx} className="flex flex-col">
-                      <span className="text-xs text-[#bfa14a] mb-1 font-mono">
-                        {item.date}
-                      </span>
-                      <span className="font-medium">{item.title}</span>
-                    </li>
-                  ))}
+                  {news.length === 0 ? (
+                    <li className="text-gray-400 text-sm">お知らせはありません</li>
+                  ) : (
+                    news.map((item) => (
+                      <li key={item.id} className="flex flex-col">
+                        <span className="text-xs text-[#bfa14a] mb-1 font-mono">{item.date}</span>
+                        <span className="font-medium">{item.title}</span>
+                      </li>
+                    ))
+                  )}
                 </ul>
-                <button className="mt-8 text-[#bfa14a] text-[14.5px] font-bold hover:underline hover:text-[#d4af37] transition">
+                <button
+                  className="mt-8 text-[#bfa14a] text-[14.5px] font-bold hover:underline hover:text-[#d4af37] transition"
+                  onClick={() => window.location.href = "/posts"}
+                >
                   すべて見る →
                 </button>
               </div>
             </div>
           </div>
-
           {/* スマホ：画像の下にNEWS欄 */}
           <div className="block sm:hidden mt-8 w-full flex justify-center">
             <div className="
@@ -297,16 +327,21 @@ export default function HeroBanner() {
                 </div>
               </div>
               <ul className="space-y-5 text-[16px] text-[#594f28]">
-                {news.map((item, idx) => (
-                  <li key={idx} className="flex flex-col">
-                    <span className="text-xs text-[#bfa14a] mb-1 font-mono">
-                      {item.date}
-                    </span>
-                    <span className="font-medium">{item.title}</span>
-                  </li>
-                ))}
+                {news.length === 0 ? (
+                  <li className="text-gray-400 text-sm">お知らせはありません</li>
+                ) : (
+                  news.map((item) => (
+                    <li key={item.id} className="flex flex-col">
+                      <span className="text-xs text-[#bfa14a] mb-1 font-mono">{item.date}</span>
+                      <span className="font-medium">{item.title}</span>
+                    </li>
+                  ))
+                )}
               </ul>
-              <button className="mt-8 text-[#bfa14a] text-[14px] font-bold hover:underline hover:text-[#d4af37] transition">
+              <button
+                className="mt-8 text-[#bfa14a] text-[14px] font-bold hover:underline hover:text-[#d4af37] transition"
+                onClick={() => window.location.href = "/posts"}
+              >
                 すべて見る →
               </button>
             </div>
