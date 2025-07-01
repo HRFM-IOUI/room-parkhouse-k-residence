@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useEffect } from "react";
 
 type Props = {
   open: boolean;
@@ -7,123 +7,138 @@ type Props = {
 };
 
 export default function Drawermenu({ open, onClose }: Props) {
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
+
   return (
     <div
       className={`
         fixed inset-0 z-[100] transition-all duration-400
+        flex flex-col
         ${open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}
       `}
       style={{
-        background: "linear-gradient(120deg, rgba(230,242,237,0.98) 0%, rgba(255,255,255,0.97) 75%, rgba(239,225,188,0.98) 100%)",
-        backdropFilter: "blur(10px)",
+        background: "linear-gradient(120deg, #faf8ef 0%, #f5ecd8 85%, #ece1c4 100%)",
+        backdropFilter: "blur(12px)",
       }}
     >
-      {/* 閉じるボタン */}
-      <button
-        className="absolute top-7 right-12 bg-white/80 border border-emerald-300 rounded-full px-5 py-2 text-emerald-700 font-bold text-lg shadow hover:bg-emerald-50 transition-all"
-        onClick={onClose}
-      >
-        ×
-      </button>
-
-      {/* サーチ・言語選択 */}
-      <div className="flex justify-end items-center pt-14 pr-20 gap-7">
-        <button className="border border-emerald-600 px-6 py-2 rounded-full text-emerald-700 font-bold bg-white hover:bg-emerald-50 transition shadow">
-          English
+      {/* ドロワーの内容自体をスクロール可にする */}
+      <div className="relative flex-1 overflow-y-auto overscroll-contain max-h-screen">
+        {/* 閉じるボタン */}
+        <button
+          className="
+            fixed top-6 right-6 sm:top-7 sm:right-12
+            bg-white/90 border border-[#dfc68e] rounded-full px-5 py-2
+            text-gray-300 font-bold text-2xl shadow-md
+            hover:bg-[#fff7d7] transition-all
+            z-[101]
+          "
+          onClick={onClose}
+          style={{ lineHeight: "0.8", fontSize: "1.0rem" }}
+          aria-label="メニューを閉じる"
+        >
+          ×
         </button>
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="サイト内を検索"
-            className="px-6 py-2 rounded-full border border-gray-300 text-sm outline-none shadow-sm bg-white min-w-[220px] max-w-[70vw]"
-            style={{
-              fontFamily: "Noto Sans JP, Yu Gothic, Arial, sans-serif",
-              letterSpacing: "0.01em",
-            }}
-          />
-          <button className="absolute right-2 top-1.5 text-emerald-600 font-bold text-xl bg-transparent">
-            <svg width={20} height={20} fill="none" viewBox="0 0 20 20">
-              <circle cx="9" cy="9" r="7.5" stroke="#047857" strokeWidth="2" />
-              <path d="M15 15l-3-3" stroke="#047857" strokeWidth="2" strokeLinecap="round" />
-            </svg>
+
+        {/* サーチ・言語選択 */}
+        <div className="flex flex-col sm:flex-row justify-end items-center pt-20 sm:pt-16 pr-6 sm:pr-20 gap-5 sm:gap-8 w-full">
+          <button className="border border-gold-600 px-5 py-2 rounded-full text-gray-300 font-bold bg-white hover:bg-[#fff7d7] transition shadow-sm">
+            English
           </button>
-        </div>
-      </div>
-
-      {/* メインメニュー（アイコン/丸角カード/アクセントカラー） */}
-      <div className="w-full flex flex-wrap justify-center gap-8 mt-14 mb-8">
-        {[
-          { label: "マイページ", color: "linear-gradient(90deg,#e0eafc,#cfdef3)" },
-          { label: "ギャラリー", color: "linear-gradient(90deg,#f2e7de,#f6eee3)" },
-          { label: "施設・サービス", color: "linear-gradient(90deg,#d9f9ec,#e8f5e9)" },
-          { label: "イベント", color: "linear-gradient(90deg,#fffbe6,#fff8dc)" },
-          { label: "プレミアム会員", color: "linear-gradient(90deg,#e2f1e7,#ede8f5)" },
-        ].map((item, i) => (
-          <div
-            key={i}
-            className="flex flex-col items-center justify-center shadow-xl rounded-2xl px-12 py-6 min-w-[170px] min-h-[80px] font-semibold text-[17px] border border-[#ececec] transition-all hover:scale-105"
-            style={{
-              background: item.color,
-              color: "#047857",
-            }}
-          >
-            {/* SVGアイコンをここに */}
-            {item.label}
+          <div className="relative w-full sm:w-auto max-w-xs">
+            <input
+              type="text"
+              placeholder="サイト内を検索"
+              className="px-6 py-2 rounded-full border border-gray-300 text-[15px] outline-none shadow-sm bg-white min-w-[140px] sm:min-w-[220px] w-full sm:w-auto text-gray-800"
+              style={{
+                fontFamily: "Noto Sans JP, Yu Gothic, Arial, sans-serif",
+                letterSpacing: "0.01em",
+              }}
+            />
+            <button
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-gold-600 font-bold text-xl bg-transparent"
+              tabIndex={-1}
+            >
+              <svg width={20} height={20} fill="none" viewBox="0 0 20 20">
+                <circle cx="9" cy="9" r="7.5" stroke="#be9b52" strokeWidth="2" />
+                <path d="M15 15l-3-3" stroke="#be9b52" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </button>
           </div>
-        ))}
-      </div>
+        </div>
 
-      {/* ナビセクション */}
-      <div className="w-full flex justify-between px-24 mt-10">
-        {/* 物件情報 */}
-        <div>
-          <div className="font-bold text-[19px] text-gold-700 mb-3">物件情報</div>
-          <div className="flex flex-row gap-14">
-            <div>
-              <div className="flex items-center font-semibold text-emerald-700 mb-2">🏢 住まい</div>
-              <ul className="text-[15px] text-gray-700 font-light">
-                <li>フロアプラン</li>
-                <li>ルームタイプ</li>
-                <li>価格・ご契約</li>
-                <li>見学予約</li>
-              </ul>
+        {/* メインメニュー */}
+        <div className="
+          w-full flex flex-wrap justify-center gap-6 sm:gap-8 mt-10 mb-7
+          px-2 sm:px-0
+        ">
+          {[
+            { label: "ログイン", color: "linear-gradient(100deg,#fffbe6 0%,#fff8dc 90%)" },
+            { label: "イベント", color: "linear-gradient(100deg,#f4ede2 0%,#fcf6ea 100%)" },
+            { label: "施設・サービス", color: "linear-gradient(90deg,#f2efdb 0%,#ebe2ca 100%)" },
+            { label: "管理組合", color: "linear-gradient(100deg,#faf4e0 0%,#f8ecd8 100%)" },
+            { label: "管理室より", color: "linear-gradient(90deg,#f7ead9 0%,#efe1c9 100%)" },
+          ].map((item, i) => (
+            <div
+              key={i}
+              className="
+                flex flex-col items-center justify-center
+                shadow-xl rounded-2xl px-8 py-6 min-w-[135px] min-h-[68px] font-semibold text-[16px]
+                border border-[#e8dab3] transition-all hover:scale-105
+                cursor-pointer
+                w-full sm:w-auto
+              "
+              style={{
+                background: item.color,
+                color: "#bfa15a",
+              }}
+            >
+              {item.label}
             </div>
-          </div>
-        </div>
-        {/* コミュニティ */}
-        <div>
-          <div className="font-bold text-[19px] text-gold-700 mb-3">コミュニティ</div>
-          <ul className="text-[15px] text-gray-700 font-light">
-            <li>イベント情報</li>
-            <li>住民限定ページ</li>
-            <li>ご意見・ご要望</li>
-          </ul>
-        </div>
-        {/* プレミアムサービス */}
-        <div>
-          <div className="font-bold text-[19px] text-gold-700 mb-3">プレミアムサービス</div>
-          <ul className="text-[15px] text-gray-700 font-light">
-            <li>コンシェルジュ</li>
-            <li>お問合せ</li>
-            <li>FAQ</li>
-          </ul>
-        </div>
-      </div>
-
-      {/* 地域・法人情報 */}
-      <div className="w-full flex flex-wrap justify-center mt-14 gap-8 px-20 text-gray-600 text-sm">
-        <div className="flex gap-2">
-          <span className="font-bold text-emerald-700">地域情報</span>
-          {["北海道", "東北", "関東", "東海", "関西", "中国", "四国", "九州"].map((r, i) => (
-            <span key={i} className="px-2">{r}</span>
           ))}
         </div>
-        <div className="flex gap-2 mt-2">
-          <span className="font-bold text-emerald-700">法人のお客さま</span>
-          <span>法人向けサービス・お問い合わせ</span>
+
+        {/* ナビセクション */}
+        <div className="
+          w-full flex flex-col sm:flex-row justify-between px-4 sm:px-24 mt-8 gap-6 sm:gap-0
+        ">
+          {/* 物件情報 */}
+          <div>
+            <div className="font-bold text-[18px] text-[#bfa15a] mb-2">管理組合</div>
+            <ul className="text-[15px] text-gray-700 font-light space-y-1">
+              <li>🏢 管理組合</li>
+              <li>理事会</li>
+              <li>管理室より</li>
+            </ul>
+          </div>
+          {/* コミュニティ */}
+          <div>
+            <div className="font-bold text-[18px] text-[#bfa15a] mb-2">コミュニティ</div>
+            <ul className="text-[15px] text-gray-700 font-light space-y-1">
+              <li>検討委員会</li>
+              <li>防災委員会</li>
+              <li>季節イベント</li>
+            </ul>
+          </div>
+          {/* プレミアムサービス */}
+          <div>
+            <div className="font-bold text-[18px] text-[#bfa15a] mb-2">サービス</div>
+            <ul className="text-[15px] text-gray-700 font-light space-y-1">
+              <li>地域情報</li>
+              <li>お問合せ</li>
+              <li>FAQ</li>
+            </ul>
+          </div>
         </div>
       </div>
-      {/* 追加フッター要素もOK */}
     </div>
   );
 }
