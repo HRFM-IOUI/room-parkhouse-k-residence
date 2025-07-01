@@ -221,8 +221,9 @@ export default function HeroBanner() {
               />
             )}
 
-            {/* ブランドラベル */}
-            <div className="absolute left-0 top-0 px-8 py-5 z-20 flex flex-col gap-4 pointer-events-none select-none"
+            {/* ブランドラベル（PCのみ表示、スマホは非表示） */}
+            <div
+              className="absolute left-0 top-0 px-8 py-5 z-20 flex flex-col gap-4 pointer-events-none select-none hidden sm:flex"
               style={{ fontFamily: brandFont }}
             >
               <span className="text-[1.86rem] sm:text-[1.8rem] font-extrabold tracking-tight text-[#bfa14a] drop-shadow-md"
