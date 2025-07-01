@@ -26,18 +26,17 @@ const CATEGORY_LIST = [
 ];
 
 const CATEGORY_MAP: Record<string, string> = {
-  vision: "ビジョン",
-  specs: "仕様",
-  announcement: "お知らせ",
-  usecase: "活用事例",
-  research: "調査",
-  culture: "文化",
-  technology: "技術",
-  education: "教育",
-  policy: "方針",
-  philosophy: "理念",
-  worldview: "世界観",
-  uncategorized: "未分類",
+  vision: "管理組合",
+  specs: "理事会",
+  announcement: "検討委員会",
+  usecase: "防災",
+  research: "地域情報",
+  culture: "管理室より",
+  technology: "ペット",
+  education: "季節イベント",
+  policy: "環境美化",
+  philosophy: "今期理事",
+  worldview: "その他",
 };
 
 type Block = {
