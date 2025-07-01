@@ -38,7 +38,7 @@ export default function FooterSection() {
             お知らせ
           </a>
           <a className="hover:underline hover:text-[#bdae75]" href="#">
-            企業情報
+            管理組合
           </a>
         </div>
       </div>
@@ -80,7 +80,7 @@ export default function FooterSection() {
             zIndex: 1,
           }}
         />
-        <span className="relative z-10">© 2024 Premium Residence</span>
+        <span className="relative z-10">© 2025 The Parkhouse Kamishakujii Residence</span>
       </div>
     </footer>
   );

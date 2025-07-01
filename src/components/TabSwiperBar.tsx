@@ -5,41 +5,38 @@ import { Autoplay } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/autoplay";
 
-// タブ名を適宜変更してもOK
 const tabItems = [
   "重要なお知らせ",
-  "ドコモMAX／ドコモ ポイ活MAX",
-  "home 5G",
-  "Android",
-  "iPhone",
-  "ahamo",
-  "ドコモ光",
-  "Lemino（映像配信）",
+  "ペットのいる暮らし",
+  "地域情報",
+  "季節情報",
+  "管理室より",
+  "検討委員会活動",
+  "暮らしと防災",
 ];
 
 export default function TabSwiperBar() {
   return (
-    <div className="relative flex justify-center py-3 mb-10 max-w-full">
+    <div className="relative flex justify-center py-3 mb-8 max-w-full">
       {/* フェードオーバーレイ（左） */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute left-0 top-0 h-full w-20 
-          bg-gradient-to-r from-white via-emerald-100/70 to-transparent z-30"
+        className="pointer-events-none absolute left-0 top-0 h-full w-24 
+          bg-gradient-to-r from-white via-[#f9eab5]/40 to-transparent z-30"
       />
       {/* フェードオーバーレイ（右） */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute right-0 top-0 h-full w-20 
-          bg-gradient-to-l from-white via-gold-100/60 to-transparent z-30"
+        className="pointer-events-none absolute right-0 top-0 h-full w-24 
+          bg-gradient-to-l from-white via-[#f9eab5]/40 to-transparent z-30"
       />
+      {/* 背景レイヤー（グラデ＋ガラス感） */}
+      <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white via-[#fffbe6] to-[#ecd98b]/30 opacity-80 blur-[2px] pointer-events-none z-10" />
 
-      {/* 背景レイヤー（ダイヤモンドっぽい淡グラデ） */}
-      <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white via-emerald-50 to-gold-50 opacity-70 blur-md pointer-events-none z-10" />
-
-      <div className="w-full max-w-[1200px] px-6 relative z-20">
+      <div className="w-full max-w-[1440px] px-6 relative z-20">
         <Swiper
           modules={[Autoplay]}
-          spaceBetween={28}  // 少しゆとりある間隔
+          spaceBetween={28}
           slidesPerView={"auto"}
           autoplay={{
             delay: 3500,
@@ -57,19 +54,19 @@ export default function TabSwiperBar() {
             >
               <button
                 className={`
-                  rounded-full
-                  px-8 py-2 text-[15px] font-semibold
-                  shadow-sm whitespace-nowrap border transition-all duration-200
-                  bg-white/80 border-emerald-100 text-[#222]
-                  hover:bg-gradient-to-br hover:from-emerald-100 hover:to-gold-100
-                  hover:border-gold-400 hover:text-gold-700
-                  focus:outline-none focus:ring-2 focus:ring-gold-300
+                  rounded-[1.5rem]
+                  px-8 py-2 text-[15.2px] font-semibold
+                  shadow-md whitespace-nowrap border transition-all duration-200
+                  bg-white/90 border-[#ecd98b] text-[#3d3300]
+                  hover:bg-gradient-to-br hover:from-[#fffbe6] hover:to-[#ecd98b]
+                  hover:border-[#d4af37] hover:text-[#d4af37]
+                  focus:outline-none focus:ring-2 focus:ring-[#ecd98b]/50
                 `}
                 style={{
                   letterSpacing: "0.03em",
-                  boxShadow:
-                    "0 2px 8px 0 rgba(47,125,104,0.07), 0 1px 3px 0 rgba(210,174,55,0.05)",
                   fontFamily: '"Noto Sans JP", "Yu Gothic", Arial, serif',
+                  boxShadow:
+                    "0 2px 8px 0 rgba(212,175,55,0.06), 0 1px 5px 0 #ececec55",
                 }}
               >
                 {item}

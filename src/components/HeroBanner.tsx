@@ -1,37 +1,19 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
 import { ParallaxProvider, Parallax } from "react-scroll-parallax";
-import { motion } from "framer-motion"; // framer-motionを使用
+import { motion } from "framer-motion";
 
-// スライドデータ
 const slides = [
-  {
-    img1: "/0001pfoc herobanner.jpg", // 左側カード画像
-    img2: "/IMG_5614.jpg", // 右側カード画像
-    ctaTitle: "人を、想う力。街を、想う力。",
-    ctaButton: "MESSAGE",
-  },
-  {
-    img1: "/IMG_5614.jpg",
-    img2: "/IMG_5615.jpg",
-    ctaTitle: "新たな時代の一歩を。",
-    ctaButton: "VIEW MORE",
-  },
-  {
-    img1: "/IMG_5615.jpg",
-    img2: "/0001pfoc herobanner.jpg",
-    ctaTitle: "あなたの夢を現実に。",
-    ctaButton: "JOIN US",
-  },
+  { img1: "/0001pfoc herobanner.jpg" },
+  { img1: "/IMG_5614.jpg" },
+  { img1: "/IMG_5615.jpg" },
 ];
 
-// ニュースデータの型定義
 type NewsItem = {
   date: string;
   title: string;
 };
 
-// ニュースデータ
 const news: NewsItem[] = [
   { date: "2025.06.30", title: "新サービス開始のお知らせ" },
   { date: "2025.06.25", title: "サイトリニューアルしました" },
@@ -43,7 +25,6 @@ export default function HeroBanner() {
   const [fade, setFade] = useState(true);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // スライド切り替えフェード
   useEffect(() => {
     timeoutRef.current = setTimeout(() => setFade(false), 4500);
     const next = setTimeout(() => {
@@ -61,13 +42,12 @@ export default function HeroBanner() {
   return (
     <ParallaxProvider>
       <section
-        className="w-full flex justify-center items-center min-h-[560px] py-16 px-0 relative"
+        className="w-full flex justify-center items-center min-h-[320px] sm:min-h-[500px] py-6 sm:py-14 px-0 relative"
         style={{
-          background:
-            "linear-gradient(120deg, #f9fafb 0%, #f5f7fa 70%, #ecf4ef 100%)",
+          background: "linear-gradient(120deg, #f9fafb 0%, #f5f7fa 70%, #ecf4ef 100%)",
         }}
       >
-        {/* 背景パララックス・幾何学グラデ */}
+        {/* 背景パララックス */}
         <Parallax speed={-30} className="absolute inset-0 w-full h-full z-0 pointer-events-none select-none">
           <svg width="100%" height="100%" viewBox="0 0 1500 540" fill="none" className="w-full h-full">
             <defs>
@@ -77,98 +57,96 @@ export default function HeroBanner() {
                 <stop offset="1" stopColor="#ecf4ef" stopOpacity="0.21" />
               </linearGradient>
             </defs>
-            <rect x="0" y="40" width="1500" height="420" rx="50" fill="url(#heroGrad)" />
-            {/* ガラス片＆ダイヤ調 */}
+            <rect x="0" y="40" width="1500" height="420" rx="32" fill="url(#heroGrad)" />
             <polygon points="0,540 170,40 400,540" fill="#fffbe6" opacity="0.09" />
             <polygon points="730,490 820,90 1280,530" fill="#fff" opacity="0.06" />
             <ellipse cx="1040" cy="240" rx="70" ry="26" fill="#f6e27a" opacity="0.11" />
-            {/* ラインハイライト */}
             <rect x="1250" y="90" width="160" height="8" rx="4" fill="#fffbe6" opacity="0.14" />
           </svg>
         </Parallax>
-        {/* 光の筋エフェクト（手前） */}
-        <Parallax speed={-12} className="absolute left-24 top-8 w-64 h-14 z-10 pointer-events-none">
-          <div className="w-full h-full rounded-full bg-gradient-to-r from-white/80 via-yellow-100/70 to-transparent blur-xl opacity-60 animate-pulse" />
-        </Parallax>
 
-        {/* メインバナー・ガラスボックス */}
-        <div className="w-full max-w-[1320px] mx-auto px-2 relative z-20">
-          <div
-            className="flex rounded-[2.2rem] bg-white/80 shadow-2xl overflow-hidden border border-[#efefef] backdrop-blur-lg relative"
-            style={{
-              boxShadow:
-                "0 10px 54px 0 rgba(34,110,95,0.09), 0 1.5px 8px 0 rgba(212,175,55,0.12)",
-            }}
-          >
-            {/* ヒーローイメージ＋CTA */}
-            <div className="relative flex-1 min-w-[420px] h-[440px] flex items-end z-10">
-              {/* 左側カード（異なる画像） */}
-              <motion.div
-                className="w-full h-full absolute left-0 bg-cover rounded-l-[2.2rem] z-20"
+        <div className="w-full max-w-[95vw] sm:max-w-[1320px] mx-auto px-2 relative z-20">
+          {/* Hero画像＋NEWS（PC） */}
+          <div className="relative w-full aspect-[16/8] sm:aspect-[16/7] rounded-[1.5rem] shadow-xl overflow-hidden border border-[#ecd98b]/40 bg-white/60 backdrop-blur-lg">
+            {/* Hero画像 */}
+            <motion.div
+              className="absolute inset-0 w-full h-full bg-cover bg-center rounded-[1.5rem]"
+              style={{
+                backgroundImage: `url(${slide.img1})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+              }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: fade ? 1 : 0 }}
+              transition={{ duration: 1 }}
+            />
+            {/* PCのみNEWS欄：画像右端に高さぴったり */}
+            <div className="hidden sm:flex">
+              <div
+                className="
+                  absolute top-0 right-0 bottom-0
+                  w-[340px] h-full
+                  bg-white/80
+                  rounded-r-[1.5rem]
+                  flex flex-col justify-center px-8 py-8
+                  border-l border-[#ecd98b]/30
+                  shadow-xl
+                  backdrop-blur-[8px]
+                  z-20
+                "
                 style={{
-                  backgroundImage: `url(${slide.img1})`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
+                  boxShadow: "0 8px 38px 0 rgba(212,175,55,0.13)",
                 }}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: fade ? 1 : 0 }}
-                transition={{ duration: 1 }}
               >
-                <div className="absolute left-10 bottom-10 z-20 flex flex-col items-start max-w-[370px]">
-                  <div className="bg-white/95 backdrop-blur-[3px] rounded-2xl px-11 py-7 shadow-xl border border-[#eee4cc]">
-                    <div className="text-[1.5rem] font-semibold text-[#1d2921] mb-4 leading-snug tracking-tight font-serif">
-                      {slide.ctaTitle}
-                    </div>
-                    <button
-                      className="bg-gradient-to-r from-[#e7d38e] via-emerald-600 to-[#f7efcb]
-                      text-white rounded-full px-10 py-2 text-[1.08rem] font-bold shadow-lg
-                      hover:brightness-110 hover:scale-105 transition relative overflow-hidden"
-                      style={{
-                        boxShadow: "0 1.5px 16px 0 #d4af3721, 0 0.5px 2.5px 0 #13c3b615",
-                      }}
-                    >
-                      <span className="relative z-10">{slide.ctaButton}</span>
-                      {/* 光筋エフェクト */}
-                      <span className="absolute left-2 right-2 top-0 h-[2.5px] bg-gradient-to-r from-white/70 via-yellow-100/60 to-transparent blur-[1.5px] opacity-50"></span>
-                    </button>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-1.5 h-6 bg-gradient-to-b from-[#ecd98b] to-[#fffbe6] rounded-full" />
+                  <div className="text-[#bfa14a] font-bold text-xs tracking-widest font-mono">
+                    NEWS
                   </div>
                 </div>
-              </motion.div>
-
-              {/* 右側カード（異なる画像） */}
-              <motion.div
-                className="w-full h-full absolute right-0 bg-cover rounded-r-[2.2rem] z-20"
-                style={{
-                  backgroundImage: `url(${slide.img2})`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                }}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: fade ? 1 : 0 }}
-                transition={{ duration: 1 }}
-              />
-            </div>
-
-            {/* 右ニュース欄（右の画像と重なるように配置） */}
-            <div className="w-[370px] flex flex-col justify-center items-start h-[440px] px-0 z-20 absolute top-0 right-0">
-              <div className="w-full h-full bg-white/70 rounded-r-[2.2rem] flex flex-col justify-center px-10 py-8 border-l border-[#e6e6e6] shadow-inner">
-                <div className="text-emerald-700 font-bold text-xs mb-2 tracking-widest font-mono">
-                  NEWS
-                </div>
-                <ul className="space-y-4 text-[15.5px] text-[#283c32]">
+                <ul className="space-y-4 text-[15.5px] text-[#594f28]">
                   {news.map((item: NewsItem, idx: number) => (
                     <li key={idx} className="flex flex-col">
-                      <span className="text-xs text-[#a9a9a9] mb-1 font-mono">
+                      <span className="text-xs text-[#bfa14a] mb-1 font-mono">
                         {item.date}
                       </span>
                       <span className="font-medium">{item.title}</span>
                     </li>
                   ))}
                 </ul>
-                <button className="mt-7 text-emerald-700 text-sm font-bold hover:underline hover:text-yellow-500 transition">
+                <button className="mt-7 text-[#bfa14a] text-sm font-bold hover:underline hover:text-[#d4af37] transition">
                   すべて見る →
                 </button>
               </div>
+            </div>
+          </div>
+          {/* スマホ：画像下にNEWS欄 */}
+          <div className="block sm:hidden mt-6 w-full flex justify-center">
+            <div className="
+              w-full max-w-[650px]
+              bg-white/88
+              rounded-[1.4rem]
+              flex flex-col justify-center px-5 py-7 border border-[#ecd98b]/30 shadow-inner
+            ">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-1.5 h-6 bg-gradient-to-b from-[#ecd98b] to-[#fffbe6] rounded-full" />
+                <div className="text-[#bfa14a] font-bold text-xs tracking-widest font-mono">
+                  NEWS
+                </div>
+              </div>
+              <ul className="space-y-4 text-[15.2px] text-[#594f28]">
+                {news.map((item: NewsItem, idx: number) => (
+                  <li key={idx} className="flex flex-col">
+                    <span className="text-xs text-[#bfa14a] mb-1 font-mono">
+                      {item.date}
+                    </span>
+                    <span className="font-medium">{item.title}</span>
+                  </li>
+                ))}
+              </ul>
+              <button className="mt-7 text-[#bfa14a] text-sm font-bold hover:underline hover:text-[#d4af37] transition">
+                すべて見る →
+              </button>
             </div>
           </div>
         </div>

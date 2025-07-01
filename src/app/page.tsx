@@ -21,7 +21,7 @@ export default function Page() {
 
         {/* 2. Header本体（台座パララックス）→ StickyBarに少し重なるようズラす */}
         <Header />
-
+　　　   <div className="mb 0 sm:mb-15" /> {/* ここを追加！ */}
         {/* 3. Heroバナー */}
         <div className="mb-10">
           <HeroBanner />

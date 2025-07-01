@@ -3,24 +3,24 @@ import React, { useState, useRef, useEffect } from "react";
 import Drawermenu from "./Drawermenu";
 
 export default function StickyBar() {
-  const [drawerOpen, setDrawerOpen] = useState<boolean>(false); // drawerOpenの型指定
-  const [showBar, setShowBar] = useState<boolean>(true); // showBarの型指定
-  const lastScroll = useRef<number>(0); // lastScrollの型指定
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null); // timeoutRefの型指定
+  const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
+  const [showBar, setShowBar] = useState<boolean>(true);
+  const lastScroll = useRef<number>(0);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const handleScroll = () => {
       const current = window.scrollY;
       if (current > lastScroll.current && current > 32) setShowBar(false);
       else if (current < lastScroll.current) setShowBar(true);
-      clearTimeout(timeoutRef.current!); // timeoutRefがnullでないことを保証
+      clearTimeout(timeoutRef.current!);
       timeoutRef.current = setTimeout(() => setShowBar(true), 210);
       lastScroll.current = current;
     };
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => {
       window.removeEventListener("scroll", handleScroll);
-      if (timeoutRef.current) clearTimeout(timeoutRef.current); // クリア
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, []);
 
@@ -39,16 +39,18 @@ export default function StickyBar() {
             mx-auto
             bg-white/90 backdrop-blur-xl shadow-[0_4px_38px_0_rgba(212,175,55,0.14)]
             mt-3
-            w-full max-w-[1200px] h-[52px]
+            w-full max-w-[1600px] h-[52px]
             rounded-[20px] border border-[#ececec]
-            px-2 md:px-8 xl:px-12
+            px-2 md:px-12 xl:px-16
             flex items-center justify-between
             transition-all duration-500
             group
           `}
           style={{
-            fontFamily: '"Noto Sans JP", "Yu Gothic", Arial, Helvetica, sans-serif',
-            boxShadow: "0 8px 36px 0 rgba(212,175,55,0.12), 0 0.5px 3.5px 0 #d4af3722",
+            fontFamily:
+              '"Noto Sans JP", "Yu Gothic", Arial, Helvetica, sans-serif',
+            boxShadow:
+              "0 8px 36px 0 rgba(212,175,55,0.12), 0 0.5px 3.5px 0 #d4af3722",
             backdropFilter: "blur(14px)",
           }}
         >
@@ -59,35 +61,38 @@ export default function StickyBar() {
               <span
                 className="text-[13px] md:text-[18px] font-serif font-bold select-none tracking-wide truncate"
                 style={{
-                  background: "linear-gradient(90deg,#d4af37 25%,#fffbe6 60%,#bfa14a 95%)",
+                  background:
+                    "linear-gradient(90deg,#d4af37 25%,#fffbe6 60%,#bfa14a 95%)",
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                   maxWidth: "88vw",
                   display: "inline-block",
                 }}
               >
-                Premium Residence
+                The Parkhouse Kamishakujii Residence
               </span>
             </div>
           </div>
 
           {/* ナビゲーション（PC） */}
-          <nav className="hidden md:flex flex-1 gap-7 text-gray-800 font-medium text-[15.5px] items-center min-w-0">
-            {["物件情報", "ライフスタイル", "施設サービス", "アクセス"].map((txt, i) => (
-              <a
-                key={i}
-                href="#"
-                className="px-1.5 py-1 relative group transition font-medium tracking-tight whitespace-nowrap"
-                style={{ fontWeight: 500 }}
-              >
-                <span className="relative z-10">{txt}</span>
-                <span className="block absolute left-0 right-0 -bottom-1 h-[2.5px] bg-gradient-to-r from-[#fffbe6] via-[#d4af37] to-[#bfa14a] scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left rounded-full"></span>
-              </a>
-            ))}
+          <nav className="hidden md:flex flex-1 gap-9 text-gray-800 font-medium text-[15.5px] items-center min-w-0">
+            {["物件情報", "ライフスタイル", "施設サービス", "アクセス"].map(
+              (txt, i) => (
+                <a
+                  key={i}
+                  href="#"
+                  className="px-1.5 py-1 relative group transition font-medium tracking-tight whitespace-nowrap"
+                  style={{ fontWeight: 500 }}
+                >
+                  <span className="relative z-10">{txt}</span>
+                  <span className="block absolute left-0 right-0 -bottom-1 h-[2.5px] bg-gradient-to-r from-[#fffbe6] via-[#d4af37] to-[#bfa14a] scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left rounded-full"></span>
+                </a>
+              )
+            )}
           </nav>
 
           {/* CTA（PCのみ） */}
-          <div className="hidden md:flex items-center gap-3 ml-8">
+          <div className="hidden md:flex items-center gap-4 ml-12">
             <button
               className="
                 px-6 py-2 rounded-full bg-gradient-to-r from-[#fffbe6] via-[#d4af37] to-[#bfa14a]
@@ -96,9 +101,12 @@ export default function StickyBar() {
                 border border-[#ecd98b]
                 min-w-0
               "
-              style={{ letterSpacing: "0.03em", boxShadow: "0 1px 8px #d4af3750" }}
+              style={{
+                letterSpacing: "0.03em",
+                boxShadow: "0 1px 8px #d4af3750",
+              }}
             >
-              資料請求
+              ログイン
             </button>
             <button
               className="
@@ -107,7 +115,7 @@ export default function StickyBar() {
                 min-w-0
               "
             >
-              ログイン
+              お問い合わせ
             </button>
           </div>
 
