@@ -4,9 +4,9 @@ import { ParallaxProvider, Parallax } from "react-scroll-parallax";
 import { motion } from "framer-motion";
 
 const slides = [
-  { img1: "/0001pfoc herobanner.jpg" },
-  { img1: "/IMG_5614.jpg" },
-  { img1: "/IMG_5615.jpg" },
+  { img1: "/0001pfoc-herobanner.webp" },
+  { img1: "/IMG_5614.webp" },
+  { img1: "/IMG_5615.webp" },
 ];
 
 type NewsItem = {
