@@ -312,6 +312,241 @@ export default function ArticleEditor({
           ))}
         </select>
       </div>
+
+      {/* ハイライト指定 */}
+      <div
+        style={{
+          marginBottom: 12,
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+        }}
+      >
+        <input
+          id="highlight-checkbox"
+          type="checkbox"
+          checked={!!highlight}
+          onChange={(e) => setHighlight?.(e.target.checked)}
+          style={{
+            width: 18,
+            height: 18,
+            accentColor: "#5b8dee",
+            marginRight: 6,
+          }}
+        />
+        <label
+          htmlFor="highlight-checkbox"
+          style={{
+            fontWeight: 700,
+            color: "#192349",
+            fontSize: isMobile ? 13 : 15,
+            cursor: "pointer",
+            userSelect: "none",
+          }}
+        >
+          Show in "Highlight" carousel (top)
+        </label>
+      </div>
+
+      {/* タグ編集 */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: 6,
+          marginBottom: 4,
+          flexDirection: isMobile ? "column" : "row",
+        }}
+      >
+        <span
+          style={{
+            fontWeight: 700,
+            color: "#192349",
+            marginRight: 4,
+            fontSize: isMobile ? 12 : 14,
+          }}
+        >
+          Tags:
+        </span>
+        {tags.map((tag, i) => (
+          <span
+            key={`${tag}_${i}`}
+            style={{
+              background: "#e3e8fc",
+              color: "#192349",
+              borderRadius: 8,
+              padding: "1.5px 10px",
+              fontWeight: 700,
+              fontSize: isMobile ? 11 : 13,
+              marginRight: 3,
+              marginBottom: 2,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+            }}
+          >
+            {tag}
+            <button
+              type="button"
+              style={{
+                background: "none",
+                border: "none",
+                color: "#888",
+                marginLeft: 2,
+                cursor: "pointer",
+                fontSize: isMobile ? 12 : 14,
+                fontWeight: 700,
+                padding: 0,
+              }}
+              onClick={() => handleDeleteTag(tag)}
+              aria-label={`Remove tag ${tag}`}
+              tabIndex={0}
+            >
+              ×
+            </button>
+          </span>
+        ))}
+        <div
+          style={{
+            display: "flex",
+            gap: 2,
+            width: isMobile ? "100%" : undefined,
+          }}
+        >
+          <input
+            type="text"
+            value={tagInput}
+            onChange={(e) => setTagInput(e.target.value)}
+            placeholder="Add tag"
+            style={{
+              padding: isMobile ? "3px 5px" : "5px 10px",
+              borderRadius: 6,
+              border: "1px solid #ccd5f2",
+              fontSize: isMobile ? 12 : 14,
+              minWidth: 60,
+              flex: 1,
+            }}
+            maxLength={20}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleAddTag();
+              }
+            }}
+            aria-label="Add new tag"
+          />
+          <button
+            type="button"
+            onClick={handleAddTag}
+            style={{
+              background: "#5b8dee",
+              color: "#ffffff",
+              border: "none",
+              borderRadius: 8,
+              fontWeight: 700,
+              fontSize: isMobile ? 12 : 14,
+              padding: isMobile ? "4px 7px" : "6px 15px",
+              marginLeft: 2,
+              cursor: "pointer",
+            }}
+          >
+            Add
+          </button>
+        </div>
+      </div>
+
+      {/* 言語選択 */}
+      {onFullscreenEdit && (
+        <div style={{ marginBottom: 5, display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontWeight: 700, color: "#192349", fontSize: isMobile ? 12 : 14 }}>
+            Sheet Language:
+          </span>
+          <select
+            value={blockLanguage}
+            onChange={(e) => setBlockLanguage(e.target.value as SupportedLang)}
+            style={{
+              fontWeight: 700,
+              borderRadius: 7,
+              border: "1.2px solid #e0e4ef",
+              padding: isMobile ? "4px 8px" : "6px 13px",
+              fontSize: isMobile ? 12 : 15,
+            }}
+            aria-label="Sheet Language"
+          >
+            {languageOptions.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {/* D&Dブロックリスト */}
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={blocks.map((b) => b.id)} strategy={verticalListSortingStrategy}>
+          <div style={{ display: "flex", flexDirection: "column", gap: isMobile ? 5 : 13 }}>
+            {blocks.map((block, idx) => (
+              <SortableBlock
+                key={`${block.id}_${idx}`}
+                block={block}
+                index={idx}
+                onSelect={() => onBlockSelect?.(block.id)}
+                onFullscreenEdit={
+                  onFullscreenEdit
+                    ? (blockId: string) => onFullscreenEdit(blockId, blockLanguage)
+                    : undefined
+                }
+                language={blockLanguage}
+                onChange={onBlockChange}
+                onDelete={onDeleteBlock}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
+      {/* PC/タブレット時のみ下ボタン。スマホは追尾フッターに集約 */}
+      {!isMobile && (
+        <>
+          <div>
+            <button
+              type="button"
+              onClick={() => onAddBlock("text")}
+              style={{
+                background: "#e3e8fc",
+                color: "#192349",
+                border: "none",
+                borderRadius: 8,
+                fontWeight: 700,
+                fontSize: 15,
+                padding: "7px 22px",
+                marginTop: 5,
+                cursor: "pointer",
+              }}
+            >
+              ＋ Add paragraph
+            </button>
+          </div>
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+            <button
+              type="submit"
+              style={{
+                background: "#5b8dee",
+                color: "#ffffff",
+                border: "none",
+                borderRadius: 8,
+                fontWeight: 800,
+                fontSize: 17,
+                padding: "11px 30px",
+                cursor: "pointer",
+              }}
+            >
+              {isEditMode ? "Save" : "Publish"}
+            </button>
+          </div>
+        </>
+      )}
     </form>
   );
 }
