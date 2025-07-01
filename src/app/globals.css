@@ -126,4 +126,35 @@ a:hover, a:focus {
     padding: 1.2em 1em;
   }
 }
+/* アクセシビリティ：文字サイズクラス */
+body.font-small  { font-size: 14px !important; }
+body.font-medium { font-size: 16px !important; }
+body.font-large  { font-size: 20px !important; }
+
+/* アクセシビリティ：カラーテーマクラス */
+body.theme-normal {
+  background: var(--background-gradient), var(--background-soft) !important;
+  color: var(--foreground) !important;
+}
+body.theme-light {
+  background: #fffbe6 !important;
+  color: #222 !important;
+}
+body.theme-dark {
+  background: #22253c !important;
+  color: #fffbe6 !important;
+}
+
+a.theme-dark,
+body.theme-dark a {
+  color: #ffe396 !important;
+  text-shadow: 0 2px 10px #0003;
+}
+
+a.theme-light,
+body.theme-light a {
+  color: #bfa14a !important;
+}
+
+/* 必要ならh1,h2,pなども追記OK */
 

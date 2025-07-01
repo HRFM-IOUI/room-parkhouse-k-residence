@@ -9,26 +9,20 @@ type Props = {
 export default function AccessibilityModal({ open, onClose }: Props) {
   if (!open) return null;
 
-  // フォントサイズ変更
+  // フォントサイズ切替
   const setFontSize = (size: "small" | "medium" | "large") => {
     document.body.classList.remove("font-small", "font-medium", "font-large");
     document.body.classList.add(`font-${size}`);
   };
 
-  // カラーモード変更
+  // カラーモード切替
   const setTheme = (theme: "normal" | "light" | "dark") => {
     document.body.classList.remove("theme-normal", "theme-light", "theme-dark");
-    if (theme === "light") {
-      document.body.classList.add("theme-light");
-    } else if (theme === "dark") {
-      document.body.classList.add("theme-dark");
-    } else {
-      document.body.classList.add("theme-normal");
-    }
+    document.body.classList.add(`theme-${theme}`);
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30 backdrop-blur-[2px] transition-all">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30 backdrop-blur-[2px]">
       <div
         className="
           relative bg-white rounded-3xl shadow-2xl
@@ -38,6 +32,7 @@ export default function AccessibilityModal({ open, onClose }: Props) {
         "
         style={{
           boxShadow: "0 8px 42px 0 #ecd98b33, 0 1.5px 8px 0 #fffbe680",
+          alignItems: "flex-start", // 中身を左寄せ
         }}
       >
         {/* 閉じるボタン */}
@@ -56,13 +51,13 @@ export default function AccessibilityModal({ open, onClose }: Props) {
           ×
         </button>
 
-        <h2 className="text-xl font-extrabold mb-2 text-[#bfa14a] drop-shadow-sm">
+        <h2 className="text-xl font-extrabold mb-2 text-[#bfa14a] drop-shadow-sm text-left">
           アクセシビリティ設定
         </h2>
 
         {/* フォントサイズ切替 */}
-        <div>
-          <p className="mb-1 font-semibold text-[#192349]">文字サイズ</p>
+        <div className="w-full">
+          <p className="mb-2 font-semibold text-[#192349] text-left">文字サイズ</p>
           <div className="flex gap-3">
             <button
               onClick={() => setFontSize("small")}
@@ -86,8 +81,8 @@ export default function AccessibilityModal({ open, onClose }: Props) {
         </div>
 
         {/* カラーモード切替 */}
-        <div>
-          <p className="mb-1 font-semibold text-[#192349]">カラーモード</p>
+        <div className="w-full">
+          <p className="mb-2 font-semibold text-[#192349] text-left">カラーモード</p>
           <div className="flex gap-3">
             <button
               onClick={() => setTheme("normal")}
