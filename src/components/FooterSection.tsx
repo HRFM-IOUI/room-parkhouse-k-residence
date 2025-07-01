@@ -1,12 +1,10 @@
 "use client";
 import React from "react";
 
-// 例：公式ソーシャルアイコンリスト
+// ソーシャルアイコン配列
 const icons = [
-  { src: "/icon-x.svg", label: "X", href: "#" },
-  { src: "/icon-facebook.svg", label: "Facebook", href: "#" },
-  { src: "/icon-instagram.svg", label: "Instagram", href: "#" },
-  { src: "/icon-line.svg", label: "LINE", href: "#" },
+  { src: "/svg/logo-black.png", label: "X", href: "#" },
+  { src: "/svg/line-icon.png", label: "LINE", href: "https://line.me/R/ti/p/@667zhzws" },
 ];
 
 export default function FooterSection() {
@@ -37,6 +35,8 @@ export default function FooterSection() {
               aria-label={icon.label}
               className="w-9 h-9 flex items-center justify-center rounded-full bg-gradient-to-br from-white via-[#f4e2b8] to-[#ede1b6] shadow-sm border border-[#ecd98b]/45 hover:scale-105 hover:shadow-md hover:bg-[#fffbe6] transition-all"
               style={{ boxShadow: "0 2px 8px #ecd98b33" }}
+              target={icon.label === "LINE" ? "_blank" : undefined}
+              rel={icon.label === "LINE" ? "noopener noreferrer" : undefined}
             >
               <img src={icon.src} alt={icon.label} className="w-5 h-5" />
             </a>
