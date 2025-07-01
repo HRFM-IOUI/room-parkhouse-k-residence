@@ -4,17 +4,13 @@ import { Parallax } from "react-scroll-parallax";
 import TabSwiperBar from "@/components/TabSwiperBar";
 
 export default function Header() {
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-
-  const toggleDrawer = () => {
-    setIsDrawerOpen(!isDrawerOpen);
-  };
+  const [isNoticeOpen, setIsNoticeOpen] = useState(false);
 
   return (
     <header
       className="w-full relative z-40 overflow-visible font-sans"
       style={{
-        marginTop: "0px", // StickyBarの高さぶん上にズラす（要調整）
+        marginTop: "0px",
         paddingTop: "0px",
       }}
     >
@@ -27,7 +23,7 @@ export default function Header() {
           backgroundRepeat: "no-repeat",
           backgroundPosition: "center",
           backgroundSize: "cover",
-          opacity: 0.93, // わずかに透過を足すとラグジュアリー
+          opacity: 0.93,
         }}
       >
         <svg width="100%" height="120" viewBox="0 0 1400 112" fill="none">
@@ -53,7 +49,7 @@ export default function Header() {
         </svg>
       </Parallax>
 
-      {/* お知らせバー */}
+      {/* お知らせバー（PCのみ） */}
       <div className="hidden sm:flex justify-center my-4 sm:my-7 px-4 sm:px-0">
         <div className="w-full max-w-[900px] bg-white/85 rounded-2xl flex items-center gap-6 px-6 sm:px-14 py-3 sm:py-4 font-medium text-[16.5px] sm:text-[19px] shadow-[0_6px_36px_0_rgba(212,175,55,0.09)] border border-[#ede8d4] backdrop-blur-[8px]">
           <span className="text-[#3d3300] font-semibold tracking-tight text-[16.5px] sm:text-[19px]">
@@ -68,23 +64,23 @@ export default function Header() {
         </div>
       </div>
 
-      {/* モバイルお知らせバー */}
+      {/* お知らせバー（スマホのみ） */}
       <div className="sm:hidden flex justify-center my-3 px-4">
         <div className="w-full bg-white/80 rounded-2xl flex items-center gap-4 px-4 py-2.5 font-medium text-[15px] shadow-[0_4px_24px_0_rgba(212,175,55,0.07)] border border-[#ede8d4] backdrop-blur-[7px]">
           <button
             className="w-full text-center bg-gradient-to-r from-[#f9eab5] via-[#ecd98b] to-[#d4af37] text-[#665c35] rounded-full px-4 py-2 font-bold shadow hover:brightness-110 transition-all"
-            onClick={toggleDrawer}
+            onClick={() => setIsNoticeOpen(true)}
           >
             西武鉄道新宿線の連続立体交差事業
           </button>
         </div>
       </div>
 
-      {/* ドロワー（お知らせバー詳細表示） */}
-      {isDrawerOpen && (
+      {/* モバイル用 お知らせ詳細モーダル */}
+      {isNoticeOpen && (
         <div
           className="fixed inset-0 bg-opacity-60 bg-black z-50 flex justify-center items-center sm:hidden"
-          onClick={toggleDrawer}
+          onClick={() => setIsNoticeOpen(false)}
         >
           <div
             className="bg-white rounded-2xl p-6 w-11/12 max-w-[400px] shadow-xl border border-[#ede8d4]"
@@ -96,7 +92,7 @@ export default function Header() {
             </p>
             <button
               className="bg-gradient-to-r from-[#ecd98b] to-[#d4af37] text-[#3d3300] rounded-full px-8 py-2 font-bold"
-              onClick={toggleDrawer}
+              onClick={() => setIsNoticeOpen(false)}
             >
               閉じる
             </button>
@@ -104,20 +100,8 @@ export default function Header() {
         </div>
       )}
 
-      {/* タブバー（モバイル・メニュー展開ボタン） */}
-      <div className="sm:hidden block relative pt-2 pb-3 z-20">
-        <div className="max-w-[1240px] mx-auto relative">
-          <button
-            onClick={toggleDrawer}
-            className="w-full text-center bg-gradient-to-r from-[#f9eab5]/80 via-[#fffbe6]/55 to-transparent opacity-90 py-3 text-[16px] font-semibold rounded-full shadow hover:brightness-110 transition-all"
-          >
-            メニューを表示
-          </button>
-        </div>
-      </div>
-
-      {/* タブバー（通常モード・PC） */}
-      <div className="hidden sm:block pt-3 pb-5 z-20">
+      {/* タブバー（PC/スマホ共通：Swiperタブ） */}
+      <div className="pt-3 pb-5 z-20 w-full">
         <div className="max-w-[1440px] mx-auto relative">
           <TabSwiperBar />
         </div>

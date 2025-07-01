@@ -35,17 +35,23 @@ export default function TabSwiperBar() {
 
       <div className="w-full max-w-[1440px] px-6 relative z-20">
         <Swiper
-          modules={[Autoplay]}
-          spaceBetween={28}
-          slidesPerView={"auto"}
-          autoplay={{
-            delay: 3500,
-            disableOnInteraction: false,
-            pauseOnMouseEnter: true,
-          }}
-          loop={true}
-          style={{ paddingLeft: 32, paddingRight: 32 }}
-        >
+  modules={[Autoplay]}
+  spaceBetween={28}
+  slidesPerView={"auto"}
+  loop={true}
+  autoplay={{
+    delay: 0,
+    disableOnInteraction: false,
+    pauseOnMouseEnter: true,
+  }}
+  speed={5000}
+  freeMode={{
+    enabled: true,
+    momentum: false, // ここをこう書く！
+  }}
+  allowTouchMove={true}
+  style={{ paddingLeft: 32, paddingRight: 32 }}
+>
           {tabItems.map((item, idx) => (
             <SwiperSlide
               key={idx}
