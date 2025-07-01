@@ -3,8 +3,9 @@ import React, { useEffect, useState, useRef } from "react";
 import { ParallaxProvider, Parallax } from "react-scroll-parallax";
 import { motion } from "framer-motion";
 
+// 画像パスは必ずファイル名と完全一致！（jpg→webpにしても同じ）
 const slides = [
-  { img1: "/0001pfoc-herobanner.webp" },
+  { img1: "/0001phoc-herobanner.webp" },
   { img1: "/IMG_5614.webp" },
   { img1: "/IMG_5615.webp" },
 ];
@@ -25,6 +26,7 @@ export default function HeroBanner() {
   const [fade, setFade] = useState(true);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // フェード切替の制御
   useEffect(() => {
     timeoutRef.current = setTimeout(() => setFade(false), 4500);
     const next = setTimeout(() => {
@@ -66,26 +68,26 @@ export default function HeroBanner() {
         </Parallax>
 
         <div className="w-full max-w-[95vw] sm:max-w-[1320px] mx-auto px-2 relative z-20">
-          {/* Hero画像＋NEWS（PC） */}
+          {/* PC：画像＋NEWS重なり・高さぴったり */}
           <div className="relative w-full aspect-[16/8] sm:aspect-[16/7] rounded-[1.5rem] shadow-xl overflow-hidden border border-[#ecd98b]/40 bg-white/60 backdrop-blur-lg">
-            {/* Hero画像 */}
+            {/* Hero画像（background-image × motion.div フェード） */}
             <motion.div
               className="absolute inset-0 w-full h-full bg-cover bg-center rounded-[1.5rem]"
               style={{
                 backgroundImage: `url(${slide.img1})`,
                 backgroundSize: "cover",
                 backgroundPosition: "center",
+                opacity: fade ? 1 : 0,
+                transition: "opacity 0.9s cubic-bezier(.6,.2,.25,1)",
+                willChange: "opacity",
               }}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: fade ? 1 : 0 }}
-              transition={{ duration: 1 }}
             />
-            {/* PCのみNEWS欄：画像右端に高さぴったり */}
+
+            {/* PCのみ右サイドにNEWS欄・高さをぴったり揃える */}
             <div className="hidden sm:flex">
               <div
                 className="
-                  absolute top-0 right-0 bottom-0
-                  w-[340px] h-full
+                  w-[340px] h-full absolute top-0 right-0
                   bg-white/80
                   rounded-r-[1.5rem]
                   flex flex-col justify-center px-8 py-8
@@ -120,7 +122,7 @@ export default function HeroBanner() {
               </div>
             </div>
           </div>
-          {/* スマホ：画像下にNEWS欄 */}
+          {/* スマホ：画像の下にNEWS欄 */}
           <div className="block sm:hidden mt-6 w-full flex justify-center">
             <div className="
               w-full max-w-[650px]
