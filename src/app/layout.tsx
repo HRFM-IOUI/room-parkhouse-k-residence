@@ -1,4 +1,4 @@
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -11,23 +11,22 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
   display: "swap",
 });
+const playfair = Playfair_Display({
+  variable: "--font-playfair",
+  subsets: ["latin"],
+  weight: ["400", "700", "900"],
+  display: "swap",
+});
 
-
-
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ja" style={{ background: "linear-gradient(120deg, #f5f5f5 0%, #e0e0e0 100%)" }}>
       <head>
-        {/* メタ・OGP・アイコン類はmetadataに移譲 */}
-        {/* カスタムフォントはglobals.cssにも指定推奨 */}
+        {/* ... */}
       </head>
       <body
         className={`
-          ${geistSans.variable} ${geistMono.variable} 
+          ${geistSans.variable} ${geistMono.variable} ${playfair.variable}
           antialiased 
           font-sans
           bg-gradient-to-br from-white via-[#f5f5f5] to-[#e0e8eb]

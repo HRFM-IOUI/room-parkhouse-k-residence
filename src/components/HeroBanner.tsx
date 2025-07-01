@@ -2,6 +2,9 @@
 import React, { useRef, useEffect, useState } from "react";
 import { ParallaxProvider, Parallax } from "react-scroll-parallax";
 
+// ブランド感Serif推奨（Google Fonts推奨）
+const brandFont = '"Playfair Display", "Noto Serif JP", serif';
+
 const slides = [
   { img: "/0001phoc-herobanner.webp" },
   { img: "/IMG_5614.webp" },
@@ -46,7 +49,6 @@ export default function HeroBanner() {
   // 初回だけimgタグで爆速レンダ
   useEffect(() => {
     if (allLoaded) {
-      // imgタグ→canvas切り替え
       setTimeout(() => setShowImg(false), 80);
     }
   }, [allLoaded]);
@@ -147,35 +149,44 @@ export default function HeroBanner() {
     return () => window.removeEventListener("resize", handleResize);
   }, [current, next, showImg]);
 
-  // レンダリング
+  // --- レンダリング ---
   return (
     <ParallaxProvider>
       <section
-        className="w-full flex justify-center items-center min-h-[320px] sm:min-h-[500px] py-6 sm:py-14 px-0 relative"
+        className="w-full flex justify-center items-center min-h-[320px] sm:min-h-[540px] py-8 sm:py-16 px-0 relative"
         style={{
-          background: "linear-gradient(120deg, #f9fafb 0%, #f5f7fa 70%, #ecf4ef 100%)",
+          background: "linear-gradient(120deg, #f8f6ef 0%, #f5f7fa 70%, #ecf4ef 100%)",
         }}
       >
-        {/* 背景パララックス */}
-        <Parallax speed={-30} className="absolute inset-0 w-full h-full z-0 pointer-events-none select-none">
-          <svg width="100%" height="100%" viewBox="0 0 1500 540" fill="none" className="w-full h-full">
+        {/* 上層パララックス光グラデーション */}
+        <Parallax speed={-34} className="absolute inset-0 w-full h-full z-0 pointer-events-none select-none">
+          <svg width="100%" height="100%" viewBox="0 0 1500 560" fill="none" className="w-full h-full">
             <defs>
-              <linearGradient id="heroGrad" x1="0" y1="0" x2="1600" y2="600" gradientUnits="userSpaceOnUse">
+              <linearGradient id="heroGrad2" x1="0" y1="0" x2="1600" y2="600" gradientUnits="userSpaceOnUse">
                 <stop stopColor="#fffbe6" />
-                <stop offset="0.5" stopColor="#d4af37" stopOpacity="0.13" />
-                <stop offset="1" stopColor="#ecf4ef" stopOpacity="0.21" />
+                <stop offset="0.36" stopColor="#f7e9b4" stopOpacity="0.16" />
+                <stop offset="0.7" stopColor="#ecd98b" stopOpacity="0.16" />
+                <stop offset="1" stopColor="#ecf4ef" stopOpacity="0.23" />
               </linearGradient>
             </defs>
-            <rect x="0" y="40" width="1500" height="420" rx="32" fill="url(#heroGrad)" />
-            <polygon points="0,540 170,40 400,540" fill="#fffbe6" opacity="0.09" />
-            <polygon points="730,490 820,90 1280,530" fill="#fff" opacity="0.06" />
-            <ellipse cx="1040" cy="240" rx="70" ry="26" fill="#f6e27a" opacity="0.11" />
-            <rect x="1250" y="90" width="160" height="8" rx="4" fill="#fffbe6" opacity="0.14" />
+            <rect x="0" y="36" width="1500" height="440" rx="40" fill="url(#heroGrad2)" />
+            <ellipse cx="1180" cy="148" rx="90" ry="27" fill="#f6e27a" opacity="0.13" />
+            <rect x="1250" y="90" width="160" height="8" rx="4" fill="#fffbe6" opacity="0.10" />
           </svg>
         </Parallax>
 
-        <div className="w-full max-w-[95vw] sm:max-w-[1320px] mx-auto px-2 relative z-20">
-          <div className="relative w-full aspect-[16/8] sm:aspect-[16/7] rounded-[1.5rem] shadow-xl overflow-hidden border border-[#ecd98b]/40 bg-white/60 backdrop-blur-lg flex items-center justify-center">
+        {/* 中央ビジュアル */}
+        <div className="w-full max-w-[96vw] sm:max-w-[1340px] mx-auto px-2 relative z-20">
+          <div className="relative w-full aspect-[16/8] sm:aspect-[16/7] rounded-[2.2rem] shadow-2xl overflow-visible border border-[#ecd98b]/40 bg-white/60 backdrop-blur-2xl flex items-center justify-center">
+            {/* 金の光沢縁 */}
+            <div className="absolute -inset-1.5 rounded-[2.6rem] pointer-events-none"
+              style={{
+                background: "linear-gradient(90deg,#ecd98b44 0%,#fffbe6bb 80%,#ecd98b44 100%)",
+                opacity: 0.45,
+                filter: "blur(4px)",
+                zIndex: 8,
+              }} />
+            {/* Main画像/Canvas */}
             {showImg ? (
               <img
                 src={slides[current].img}
@@ -185,7 +196,8 @@ export default function HeroBanner() {
                   width: "100%",
                   height: "100%",
                   objectFit: "cover",
-                  borderRadius: "1.5rem",
+                  borderRadius: "2.1rem",
+                  boxShadow: "0 8px 40px 0 #ecd98b33, 0 1.5px 8px 0 #fffbe680",
                   background: "#fffbe6",
                   transition: "box-shadow .25s cubic-bezier(.7,.23,.2,1)",
                 }}
@@ -200,37 +212,59 @@ export default function HeroBanner() {
                   display: "block",
                   width: "100%",
                   height: "100%",
-                  borderRadius: "1.5rem",
+                  borderRadius: "2.1rem",
                   objectFit: "cover",
                   background: "#fffbe6",
+                  boxShadow: "0 8px 40px 0 #ecd98b33, 0 1.5px 8px 0 #fffbe680",
                   transition: "box-shadow .25s cubic-bezier(.7,.23,.2,1)",
                 }}
               />
             )}
+
+            {/* ブランドラベル */}
+            <div className="absolute left-0 top-0 px-8 py-5 z-20 flex flex-col gap-4 pointer-events-none select-none"
+              style={{ fontFamily: brandFont }}
+            >
+              <span className="text-[1.86rem] sm:text-[1.8rem] font-extrabold tracking-tight text-[#bfa14a] drop-shadow-md"
+                style={{
+                  textShadow: "0 1px 18px #fffbe688, 0 0px 2px #ecd98b",
+                  letterSpacing: "0.05em",
+                  fontFamily: brandFont,
+                }}
+              >
+                The Parkhouse Kamishakujii Residence
+              </span>
+              <span className="block text-[1.12rem] sm:text-[1.32rem] text-[#8c8348] tracking-wide font-bold opacity-80"
+                style={{ letterSpacing: "0.12em" }}>
+                上石神井 － The Parkhouse Residence
+              </span>
+            </div>
+
             {/* NEWS欄（PC重なり/スマホ下段） */}
             <div className="hidden sm:flex">
               <div
                 className="
-                  w-[340px] h-full absolute top-0 right-0
-                  bg-white/80
-                  rounded-r-[1.5rem]
-                  flex flex-col justify-center px-8 py-8
+                  w-[360px] h-full absolute top-0 right-0
+                  bg-white/86
+                  rounded-r-[2.1rem]
+                  flex flex-col justify-center px-10 py-10
                   border-l border-[#ecd98b]/30
-                  shadow-xl
+                  shadow-2xl
                   backdrop-blur-[8px]
                   z-30
                 "
                 style={{
-                  boxShadow: "0 8px 38px 0 rgba(212,175,55,0.13)",
+                  boxShadow: "0 8px 44px 0 rgba(212,175,55,0.18)",
+                  fontFamily: brandFont,
                 }}
               >
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="w-1.5 h-6 bg-gradient-to-b from-[#ecd98b] to-[#fffbe6] rounded-full" />
+                  <div className="w-2 h-7 bg-gradient-to-b from-[#ecd98b] to-[#fffbe6] rounded-full" />
                   <div className="text-[#bfa14a] font-bold text-xs tracking-widest font-mono">
                     NEWS
                   </div>
                 </div>
-                <ul className="space-y-4 text-[15.5px] text-[#594f28]">
+                <ul className="space-y-5 text-[16.2px] text-[#594f28]">
                   {news.map((item, idx) => (
                     <li key={idx} className="flex flex-col">
                       <span className="text-xs text-[#bfa14a] mb-1 font-mono">
@@ -240,27 +274,28 @@ export default function HeroBanner() {
                     </li>
                   ))}
                 </ul>
-                <button className="mt-7 text-[#bfa14a] text-sm font-bold hover:underline hover:text-[#d4af37] transition">
+                <button className="mt-8 text-[#bfa14a] text-[14.5px] font-bold hover:underline hover:text-[#d4af37] transition">
                   すべて見る →
                 </button>
               </div>
             </div>
           </div>
+
           {/* スマホ：画像の下にNEWS欄 */}
-          <div className="block sm:hidden mt-6 w-full flex justify-center">
+          <div className="block sm:hidden mt-8 w-full flex justify-center">
             <div className="
-              w-full max-w-[650px]
-              bg-white/88
-              rounded-[1.4rem]
-              flex flex-col justify-center px-5 py-7 border border-[#ecd98b]/30 shadow-inner
-            ">
+              w-full max-w-[670px]
+              bg-white/90
+              rounded-[1.7rem]
+              flex flex-col justify-center px-7 py-8 border border-[#ecd98b]/40 shadow-inner
+            " style={{ fontFamily: brandFont }}>
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-1.5 h-6 bg-gradient-to-b from-[#ecd98b] to-[#fffbe6] rounded-full" />
+                <div className="w-2 h-7 bg-gradient-to-b from-[#ecd98b] to-[#fffbe6] rounded-full" />
                 <div className="text-[#bfa14a] font-bold text-xs tracking-widest font-mono">
                   NEWS
                 </div>
               </div>
-              <ul className="space-y-4 text-[15.2px] text-[#594f28]">
+              <ul className="space-y-5 text-[16px] text-[#594f28]">
                 {news.map((item, idx) => (
                   <li key={idx} className="flex flex-col">
                     <span className="text-xs text-[#bfa14a] mb-1 font-mono">
@@ -270,7 +305,7 @@ export default function HeroBanner() {
                   </li>
                 ))}
               </ul>
-              <button className="mt-7 text-[#bfa14a] text-sm font-bold hover:underline hover:text-[#d4af37] transition">
+              <button className="mt-8 text-[#bfa14a] text-[14px] font-bold hover:underline hover:text-[#d4af37] transition">
                 すべて見る →
               </button>
             </div>
