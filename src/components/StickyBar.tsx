@@ -1,12 +1,14 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
 import Drawermenu from "./Drawermenu";
+import { useRouter } from "next/navigation"; // 追加
 
 export default function StickyBar() {
   const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
   const [showBar, setShowBar] = useState<boolean>(true);
   const lastScroll = useRef<number>(0);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const router = useRouter(); // 追加
 
   useEffect(() => {
     const handleScroll = () => {
@@ -105,6 +107,7 @@ export default function StickyBar() {
                 letterSpacing: "0.03em",
                 boxShadow: "0 1px 8px #d4af3750",
               }}
+              onClick={() => router.push("/login")}
             >
               ログイン
             </button>

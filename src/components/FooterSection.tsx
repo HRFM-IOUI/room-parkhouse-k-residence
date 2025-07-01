@@ -51,7 +51,7 @@ export default function FooterSection() {
             boxShadow: "0 2px 10px #ecd98b22",
           }}
         >
-          公式ソーシャルメディア一覧へ
+          公式ソーシャルメディア一覧
         </button>
       </div>
 
