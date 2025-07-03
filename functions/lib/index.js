@@ -58,8 +58,8 @@ const transporter = nodemailer_1.default.createTransport({
     port: 587, // ポート番号（TLS）
     secure: false, // falseでTLS使用、trueでSSL使用
     auth: {
-        user: process.env.SMTP_USER, // 環境変数から取得
-        pass: process.env.SMTP_PASS, // 環境変数から取得
+        user: functions.config().smtp.user, // Firebase設定から取得
+        pass: functions.config().smtp.pass, // Firebase設定から取得
     },
 });
 // メール送信API
