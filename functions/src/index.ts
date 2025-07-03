@@ -24,8 +24,8 @@ app.post("/send", async (req: Request, res: Response) => {
   const { name, email, message } = req.body;
 
   const mailOptions = {
-    from: "contact@the-parkhouse-kamishakujii-residence-official.site",  // 送信元メールアドレス
-    to: "contact@the-parkhouse-kamishakujii-residence-official.site",    // 送信先メールアドレス
+    from: "info@the-parkhouse-kamishakujii-residence-official.site",  // 送信元メールアドレス
+    to: "info@the-parkhouse-kamishakujii-residence-official.site",    // 送信先メールアドレス
     subject: `【お問い合わせ】${name}様より`,  // メール件名
     html: `
       <p><strong>名前:</strong> ${name}</p>

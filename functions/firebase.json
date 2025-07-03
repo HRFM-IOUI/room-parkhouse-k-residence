@@ -3,7 +3,8 @@
     {
       "source": ".",
       "codebase": "default",
-      "runtime": "nodejs20",  
+      "runtime": "nodejs22",
+      "gen2": true,  
       "ignore": [
         "node_modules",
         ".git",

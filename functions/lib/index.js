@@ -45,31 +45,31 @@ const express_1 = __importDefault(require("express"));
 const app = (0, express_1.default)();
 app.use((0, cors_1.default)({ origin: true }));
 app.use(express_1.default.json());
-// SMTP設定（NamecheapやGmail）
+// SMTP設定（Namecheap用）
 const transporter = nodemailer_1.default.createTransport({
-    host: "mail.the-parkhouse-kamishakujii-residence-official.site", // NamecheapのSMTP
-    port: 465,
-    secure: true,
+    host: "mail.privateemail.com", // NamecheapのSMTPサーバー
+    port: 587, // ポート番号（TLS）
+    secure: false, // falseでTLS使用、trueでSSL使用
     auth: {
-        user: functions.config().smtp.user,
-        pass: functions.config().smtp.pass, // パスワード
+        user: process.env.SMTP_USER, // 環境変数から取得
+        pass: process.env.SMTP_PASS, // 環境変数から取得
     },
 });
 // メール送信API
 app.post("/send", async (req, res) => {
     const { name, email, message } = req.body;
     const mailOptions = {
-        from: "contact@the-parkhouse-kamishakujii-residence-official.site",
-        to: "contact@the-parkhouse-kamishakujii-residence-official.site",
-        subject: `【お問い合わせ】${name}様より`,
+        from: "info@the-parkhouse-kamishakujii-residence-official.site", // 送信元メールアドレス
+        to: "info@the-parkhouse-kamishakujii-residence-official.site", // 送信先メールアドレス
+        subject: `【お問い合わせ】${name}様より`, // メール件名
         html: `
       <p><strong>名前:</strong> ${name}</p>
       <p><strong>メール:</strong> ${email}</p>
       <p><strong>メッセージ:</strong><br/>${message}</p>
-    `,
+    `, // メール本文
     };
     try {
-        await transporter.sendMail(mailOptions);
+        await transporter.sendMail(mailOptions); // メール送信
         console.log("メール送信成功");
         res.status(200).send({ success: true });
     }
@@ -80,3 +80,4 @@ app.post("/send", async (req, res) => {
 });
 // Firebase Functionsとして公開
 exports.api = functions.https.onRequest(app);
+//# sourceMappingURL=index.js.map
