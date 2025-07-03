@@ -5,7 +5,16 @@ import express, { Request, Response } from "express";
 
 // CORS設定
 const app = express();
-app.use(cors({ origin: true }));
+const allowedOrigin = 'https://www.the-parkhouse-kamishakujii-residence-official.site';
+
+// CORS設定を追加（プリフライトリクエスト対応）
+const corsOptions = {
+  origin: allowedOrigin,
+  methods: ['GET', 'POST', 'OPTIONS'], // OPTIONSメソッドを許可
+  allowedHeaders: ['Content-Type'], // 必要なヘッダーを設定
+};
+
+app.use(cors(corsOptions));  // CORSを設定
 app.use(express.json());
 
 // SMTP設定（Namecheap用）
@@ -45,4 +54,5 @@ app.post("/send", async (req: Request, res: Response) => {
 });
 
 // Firebase Functionsとして公開
-export const api = functions.https.onRequest(app);
+export const api = functions
+  .https.onRequest(app);  // リージョンはデフォルト（特に指定しない）
