@@ -1,14 +1,15 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
 import Drawermenu from "./Drawermenu";
-import { useRouter } from "next/navigation"; // 追加
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function StickyBar() {
   const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
   const [showBar, setShowBar] = useState<boolean>(true);
   const lastScroll = useRef<number>(0);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const router = useRouter(); // 追加
+  const router = useRouter();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -25,6 +26,14 @@ export default function StickyBar() {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, []);
+
+  // メニュー名とパスを対応させる
+  const navItems = [
+    { label: "物件情報", path: "/property" },
+    { label: "ライフスタイル", path: "/lifestyle" },
+    { label: "施設サービス", path: "/facility" },
+    { label: "アクセス", path: "/access" },
+  ];
 
   return (
     <>
@@ -78,19 +87,17 @@ export default function StickyBar() {
 
           {/* ナビゲーション（PC） */}
           <nav className="hidden md:flex flex-1 gap-9 text-gray-800 font-medium text-[15.5px] items-center min-w-0">
-            {["物件情報", "ライフスタイル", "施設サービス", "アクセス"].map(
-              (txt, i) => (
-                <a
-                  key={i}
-                  href="#"
-                  className="px-1.5 py-1 relative group transition font-medium tracking-tight whitespace-nowrap"
-                  style={{ fontWeight: 500 }}
-                >
-                  <span className="relative z-10">{txt}</span>
-                  <span className="block absolute left-0 right-0 -bottom-1 h-[2.5px] bg-gradient-to-r from-[#fffbe6] via-[#d4af37] to-[#bfa14a] scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left rounded-full"></span>
-                </a>
-              )
-            )}
+            {navItems.map(({ label, path }, i) => (
+              <Link
+                href={path}
+                key={i}
+                className="px-1.5 py-1 relative group transition font-medium tracking-tight whitespace-nowrap cursor-pointer"
+                style={{ fontWeight: 500 }}
+              >
+                <span className="relative z-10">{label}</span>
+                <span className="block absolute left-0 right-0 -bottom-1 h-[2.5px] bg-gradient-to-r from-[#fffbe6] via-[#d4af37] to-[#bfa14a] scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left rounded-full"></span>
+              </Link>
+            ))}
           </nav>
 
           {/* CTA（PCのみ） */}

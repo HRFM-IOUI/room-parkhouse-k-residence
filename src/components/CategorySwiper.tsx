@@ -12,14 +12,14 @@ const DEFAULT_CATEGORY_MAP: { [key: string]: string } = {
   education: "季節イベント",
   policy: "環境美化",
   philosophy: "今期理事",
-  worldview: "etc",  
+  worldview: "その他",
 };
 
 type Props = {
   categories: string[];
   selected: string;
   setSelected: (cat: string) => void;
-  categoryMap?: Record<string, string>;
+  categoryMap?: Record<string, string>;  // ←ここ！型はstringだけ
 };
 
 export default function CategorySwiper({
@@ -28,7 +28,6 @@ export default function CategorySwiper({
   setSelected,
   categoryMap,
 }: Props) {
-  // categoryMapをprops優先で
   const map = categoryMap ?? DEFAULT_CATEGORY_MAP;
 
   return (

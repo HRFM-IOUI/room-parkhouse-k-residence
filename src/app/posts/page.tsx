@@ -10,7 +10,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/firebase";
 
-import StickyHeader from "@/components/StickyHeader";
+import StickyBar from "@/components/StickyBar";
 import SearchModal from "@/components/ActionsModal";
 import HighlightHeroCard from "@/components/HighlightHeroCard";
 import HighlightCarousel from "@/components/HighlightCarousel";
@@ -91,8 +91,13 @@ export default function PostsPage() {
                     .map((b: Block) => ({ type: b.type, content: b.content }))
                 : [],
               image: typeof data.image === "string" ? data.image : undefined,
-              tags: Array.isArray(data.tags) ? data.tags.filter((t: string) => typeof t === "string") : [],
-              category: typeof data.category === "string" ? data.category : "uncategorized",
+              tags: Array.isArray(data.tags)
+                ? data.tags.filter((t: string) => typeof t === "string")
+                : [],
+              category:
+                typeof data.category === "string"
+                  ? data.category
+                  : "uncategorized",
               highlight: !!data.highlight,
             };
           }
@@ -113,18 +118,20 @@ export default function PostsPage() {
   const heroPost = highlightPosts[0] || null;
   const carouselHighlightPosts = highlightPosts.slice(1);
 
-  const filteredPosts = posts.filter((post) => {
-    const titleStr = typeof post.title === "string" ? post.title : "";
-    const catStr = typeof post.category === "string" ? post.category : "";
-    const matchTitle = titleStr.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchCategory = !selectedCategory || catStr === selectedCategory;
-    const notHero = !heroPost || post.id !== heroPost.id;
-    return matchTitle && matchCategory && notHero;
-  }).slice(0, 4);
+  const filteredPosts = posts
+    .filter((post) => {
+      const titleStr = typeof post.title === "string" ? post.title : "";
+      const catStr = typeof post.category === "string" ? post.category : "";
+      const matchTitle = titleStr.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchCategory = !selectedCategory || catStr === selectedCategory;
+      const notHero = !heroPost || post.id !== heroPost.id;
+      return matchTitle && matchCategory && notHero;
+    })
+    .slice(0, 4);
 
   return (
     <>
-      <StickyHeader onSearchClick={() => setSearchOpen(true)} />
+      <StickyBar />
 
       <SearchModal
         isOpen={isSearchOpen}
@@ -136,20 +143,20 @@ export default function PostsPage() {
       <main
         className="
           max-w-[1200px] w-full mx-auto
-          px-3 sm:px-6 md:px-10 py-12
+          px-2 sm:px-4 md:px-10 py-6 sm:py-10 md:py-12
           overflow-x-hidden
           bg-gradient-to-br from-[#fdfbf7] via-[#f5f4eb] to-[#e9e3cb]
           rounded-3xl shadow-2xl border border-[#ece2c1]/60
+          min-h-[85vh]
         "
         style={{
           backdropFilter: "blur(9px)",
           boxShadow: "0 6px 48px 0 #ecd98b25, 0 1px 8px 0 #fffbe644",
-          minHeight: "70vh",
         }}
       >
         <h2
           className="
-            text-3xl sm:text-4xl font-extrabold mb-8 tracking-tight
+            text-2xl sm:text-3xl md:text-4xl font-extrabold mb-6 sm:mb-8 tracking-tight
             text-[#bfa14a] drop-shadow-lg
           "
           style={{
@@ -165,12 +172,14 @@ export default function PostsPage() {
         {error && <p className="text-center text-red-500 py-12">{error}</p>}
 
         {!loading && !error && (
-          <div className="flex flex-col lg:flex-row gap-8 w-full">
-            {/* サイドバー */}
+          <div className="flex flex-col lg:flex-row gap-4 lg:gap-8 w-full">
+            {/* サイドバー（PCのみ） */}
             <div className="
-              hidden lg:block min-w-[220px] max-w-[260px] flex-shrink-0
-              rounded-2xl bg-white/65 border border-[#ecd98b]/30 shadow-lg
-              backdrop-blur-md py-8 px-4 mr-3
+              hidden lg:block min-w-[200px] max-w-[260px] flex-shrink-0
+              rounded-2xl bg-white/70 border border-[#ecd98b]/30 shadow
+              backdrop-blur-md py-6 px-2
+              sticky top-[92px]
+              h-fit
             ">
               <CategorySidebar
                 categories={CATEGORY_LIST}
@@ -182,7 +191,7 @@ export default function PostsPage() {
 
             {/* メインエリア */}
             <div className="w-full min-w-0 flex flex-col">
-              <div className="lg:hidden mb-6 py-2">
+              <div className="lg:hidden mb-4 sm:mb-6 py-2">
                 <CategorySwiper
                   categories={CATEGORY_LIST}
                   selected={selectedCategory}
@@ -192,7 +201,7 @@ export default function PostsPage() {
               </div>
 
               {heroPost && (
-                <section className="mb-8">
+                <section className="mb-6 sm:mb-8">
                   <HighlightHeroCard post={heroPost} />
                 </section>
               )}
@@ -206,7 +215,7 @@ export default function PostsPage() {
               </section>
 
               {carouselHighlightPosts.length > 0 && (
-                <section className="mt-12">
+                <section className="mt-8 sm:mt-12">
                   <HighlightCarousel posts={carouselHighlightPosts} />
                 </section>
               )}

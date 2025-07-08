@@ -78,7 +78,6 @@ export default function FooterSection() {
           </div>
           <div className="flex flex-wrap justify-start gap-x-8 gap-y-2 text-[#7b7361] text-[14.2px] pt-3 pb-2 font-light">
             <a href="#">アクセシビリティ</a>
-            <a href="#">サイトメンテナンス</a>
             <a href="#">サイトマップ</a>
             <button
               onClick={() => router.push("/contact")}

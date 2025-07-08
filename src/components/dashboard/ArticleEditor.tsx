@@ -18,20 +18,18 @@ import SortableBlock from "./SortableBlock";
 
 // カテゴリ一覧
 const CATEGORY_LIST = [
-  "vision",
-  "specs",
-  "announcement",
-  "usecase",
-  "research",
-  "culture",
-  "technology",
-  "education",
-  "policy",
-  "philosophy",
-  "worldview",
-  "uncategorized",
+  "管理組合",
+  "理事会",
+  "検討委員会",
+  "防災",
+  "地域情報",
+  "管理室より",
+  "ペット",
+  "季節イベント",
+  "環境美化",
+  "今期理事",
+  "その他",
 ];
-
 // スマホ判定
 function useIsMobile() {
   const [isMobile, setIsMobile] = React.useState(false);
