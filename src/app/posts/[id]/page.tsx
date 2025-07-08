@@ -2,6 +2,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/firebase";
 import PostDetailClient from "./PostDetailClient";
 
+// 型定義
 type Block = {
   type: "heading" | "text" | "image" | "video";
   content: string;
@@ -14,6 +15,7 @@ type PostData = {
   image?: string;
 };
 
+// 動的メタデータ生成
 export async function generateMetadata({ params }: { params: { id: string } }) {
   const { id } = params;
   let post: PostData | null = null;
@@ -72,6 +74,7 @@ export async function generateMetadata({ params }: { params: { id: string } }) {
   };
 }
 
+// ここが型で必ずビルドが通る書き方（Page関数）
 export default function PostDetailPage({ params }: { params: { id: string } }) {
   return <PostDetailClient postId={params.id} />;
 }
