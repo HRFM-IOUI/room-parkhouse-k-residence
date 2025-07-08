@@ -1,4 +1,6 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 /* --- グローバル変数：ゴールド系&高級配色のみ --- */
 :root {
