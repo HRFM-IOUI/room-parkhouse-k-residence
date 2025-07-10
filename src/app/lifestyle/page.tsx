@@ -9,9 +9,7 @@ export default function Lifestyle() {
             周辺環境・生活施設
           </h2>
           <ul className="list-disc list-inside text-gray-800 space-y-2">
-            <li>スーパー：サミットストア石神井台店（徒歩●分）</li>
-            <li>コンビニ：ファミリーマート上石神井店（徒歩●分）</li>
-            <li>公園：上石神井四丁目公園（徒歩●分）</li>
+            <li>スーパー：サミットストア石神井台店（徒歩8分）</li>
             <li>小学校：上石神井小学校（学区）</li>
             <li>病院：上石神井クリニックモール</li>
             {/* 必要なら追加 */}
