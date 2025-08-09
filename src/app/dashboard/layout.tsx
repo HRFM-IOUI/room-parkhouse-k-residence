@@ -7,7 +7,7 @@ import { useAuthState } from "react-firebase-hooks/auth";
 import { auth } from "@/firebase";
 import Loading from "@/components/Loading";
 
-const ALLOWED_EMAIL = process.env.NEXT_PUBLIC_ALLOWED_EMAIL || ""; // Vercel環境変数で設定
+const ALLOWED_EMAILS = process.env.ALLOWED_EMAILS || ""; // Vercel環境変数で設定
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -15,7 +15,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     if (!loading) {
-      if (!user || user.email !== ALLOWED_EMAIL) {
+      if (!user || user.email !== ALLOWED_EMAILS) {
         router.replace("/login");
       }
     }
@@ -26,7 +26,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   // 許可メールじゃなければ見せない
-  if (user.email !== ALLOWED_EMAIL) {
+  if (user.email !== ALLOWED_EMAILS) {
     return <Loading />; // すぐに /login に飛ばす
   }
 
