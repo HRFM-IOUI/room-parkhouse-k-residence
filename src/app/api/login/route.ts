@@ -14,32 +14,52 @@ function initAdmin() {
     process.env.FIREBASE_ADMIN_SDK_KEY_JSON ||
     process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
 
-  if (!raw) {
-    throw new Error("Admin credential env is missing");
-  }
+  if (!raw) throw new Error("MISSING_ADMIN_ENV");
 
-  // JSONそのまま or Base64 両対応
+  // JSONそのまま / Base64 両対応
   let jsonStr = raw.trim();
   if (!jsonStr.startsWith("{")) {
     try {
       jsonStr = Buffer.from(jsonStr, "base64").toString("utf8");
     } catch {
-      throw new Error("Admin credential is not valid Base64 nor JSON");
+      throw new Error("ADMIN_ENV_NOT_BASE64_OR_JSON");
     }
   }
 
-  let cred: admin.ServiceAccount;
+  // JSON parse（anyで受けて正規化）
+  let j: any;
   try {
-    cred = JSON.parse(jsonStr);
+    j = JSON.parse(jsonStr);
   } catch {
-    throw new Error("Admin credential is invalid JSON");
+    throw new Error("ADMIN_ENV_INVALID_JSON");
   }
 
+  // スネーク/キャメル両対応で正規化
+  const projectId = j.project_id ?? j.projectId;
+  const clientEmail = j.client_email ?? j.clientEmail;
+  let privateKey: string | undefined = j.private_key ?? j.privateKey;
+
+  if (typeof privateKey === "string") {
+    // \n → 実改行
+    privateKey = privateKey.replace(/\\n/g, "\n").trim();
+  }
+
+  if (!privateKey?.includes("BEGIN PRIVATE KEY")) {
+    throw new Error("INVALID_PRIVATE_KEY_FORMAT");
+  }
+  if (!clientEmail) throw new Error("MISSING_CLIENT_EMAIL");
+
+  const serviceAccount: admin.ServiceAccount = {
+    projectId,
+    clientEmail,
+    privateKey,
+  };
+
   admin.initializeApp({
-    credential: admin.credential.cert(cred),
+    credential: admin.credential.cert(serviceAccount),
   });
 
-  // 参考：Functionsログに出る（projectId確認用）
+  // Functionsログで確認用
   console.log("ADMIN_INIT_OK projectId:", (admin.app().options as any)?.projectId);
 }
 
@@ -81,14 +101,19 @@ export async function POST(req: NextRequest) {
     console.error("LOGIN_API_ERROR", e?.message || e);
     const msg =
       typeof e?.message === "string" &&
-      (e.message.includes("credential") || e.message.includes("SERVICE_ACCOUNT"))
+      (
+        e.message.includes("ADMIN") ||
+        e.message.includes("PRIVATE_KEY") ||
+        e.message.includes("MISSING_") ||
+        e.message.includes("FORMAT")
+      )
         ? "SERVER_MISCONFIGURED_ADMIN_CREDENTIAL"
         : "SERVER_ERROR";
     return NextResponse.json({ ok: false, error: msg }, { status: 500 });
   }
 }
-// 末尾に追加（既存のPOSTはそのまま）
 
+// 診断用（GETで admin 初期化確認）
 export async function GET() {
   try {
     initAdmin();
