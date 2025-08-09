@@ -1,68 +1,67 @@
 import { NextRequest, NextResponse } from "next/server";
 
-let admin: typeof import("firebase-admin") | null = null;
-try {
-  // サービスアカウントJSONを Vercel 環境変数に入れてる場合のみ Admin を初期化
-  const keyJson = process.env.FIREBASE_ADMIN_SDK_KEY_JSON;
-  if (keyJson && !("apps" in (await import("firebase-admin")) && (await import("firebase-admin")).apps?.length)) {
-    admin = await import("firebase-admin");
-    admin.initializeApp({
-      credential: admin.credential.cert(JSON.parse(keyJson) as any),
-    });
+type BodyAny = Record<string, any>;
+
+// async 関数の正しい定義（型注釈付き）
+async function safeParseJson(req: NextRequest): Promise<BodyAny> {
+  try {
+    if (req.headers.get("content-type")?.includes("application/json")) {
+      return await req.json();
+    }
+    if (req.headers.get("content-type")?.includes("application/x-www-form-urlencoded")) {
+      const form = await req.formData();
+      const obj: BodyAny = {};
+      form.forEach((v, k) => (obj[k] = v));
+      return obj;
+    }
+    const text = await req.text();
+    try {
+      return JSON.parse(text);
+    } catch {
+      return { _raw: text };
+    }
+  } catch (e) {
+    return { _parseError: String(e) };
   }
-} catch {
-  admin = null;
 }
 
-function pickEmailFromBody(body: any): string | null {
-  if (!body || typeof body !== "object") return null;
+function pickEmail(b: BodyAny): string | null {
+  if (!b || typeof b !== "object") return null;
   const candidates = [
-    body.email,
-    body.user?.email,
-    body.data?.email,
-    body.credentials?.email,
-    body.payload?.email,
+    b.email,
+    b.user?.email,
+    b.data?.email,
+    b.credentials?.email,
+    b.payload?.email,
   ];
-  const found = candidates.find((v) => typeof v === "string" && v.includes("@"));
+  const found = candidates.find((x) => typeof x === "string" && x.includes("@"));
   return found || null;
 }
 
-async function emailFromIdToken(idToken: string): Promise<string | null> {
-  try {
-    if (!admin) return null;
-    const decoded = await admin.auth().verifyIdToken(idToken);
-    return typeof decoded.email === "string" ? decoded.email : null;
-  } catch {
-    return null;
-  }
-}
-
 export async function POST(req: NextRequest) {
-  try {
-    const body = await req.json();
+  const body = await safeParseJson(req);
+  const email = pickEmail(body);
 
-    // 1) まず素直に email を拾う
-    let email = pickEmailFromBody(body);
-
-    // 2) それでも無ければ idToken から抽出（Admin が初期化されている場合）
-    if (!email && typeof body?.idToken === "string") {
-      email = await emailFromIdToken(body.idToken);
-    }
-
-    if (!email) {
-      return NextResponse.json({ ok: false, error: "INVALID_PAYLOAD_NO_EMAIL" }, { status: 400 });
-    }
-
-    const raw = process.env.ALLOWED_EMAILS ?? process.env.ALLOWED_EMAIL ?? "";
-    const allowList = raw.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
-
-    const allowed = allowList.includes(email.toLowerCase());
-    if (!allowed) {
-      return NextResponse.json({ ok: false, error: "FORBIDDEN" }, { status: 403 });
-    }
-
-    return NextResponse.json({ ok: true });
-  } catch {
-    return NextResponse.json({ ok: false, error: "SERVER_ERROR" }, { status: 500 });
+  if (!email) {
+    return NextResponse.json(
+      { ok: false, error: "INVALID_PAYLOAD_NO_EMAIL", debug: { body } },
+      { status: 400 }
+    );
   }
+
+  const raw = process.env.ALLOWED_EMAILS ?? process.env.ALLOWED_EMAIL ?? "";
+  const allowList = raw.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+
+  if (!allowList.length) {
+    return NextResponse.json(
+      { ok: false, error: "SERVER_MISCONFIGURED_NO_ALLOWED_EMAILS" },
+      { status: 500 }
+    );
+  }
+
+  if (!allowList.includes(email.toLowerCase())) {
+    return NextResponse.json({ ok: false, error: "FORBIDDEN", email }, { status: 403 });
+  }
+
+  return NextResponse.json({ ok: true });
 }
