@@ -87,3 +87,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: msg }, { status: 500 });
   }
 }
+// 末尾に追加（既存のPOSTはそのまま）
+
+export async function GET() {
+  try {
+    initAdmin();
+    const projectId = (admin.app().options as any)?.projectId;
+    return NextResponse.json({ ok: true, projectId });
+  } catch (e:any) {
+    return NextResponse.json(
+      { ok:false, error: e?.message || String(e) },
+      { status: 500 }
+    );
+  }
+}
