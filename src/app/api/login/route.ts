@@ -1,67 +1,58 @@
+// src/app/api/login/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import * as admin from "firebase-admin";
 
-type BodyAny = Record<string, any>;
+export const runtime = "nodejs";
 
-// async 関数の正しい定義（型注釈付き）
-async function safeParseJson(req: NextRequest): Promise<BodyAny> {
-  try {
-    if (req.headers.get("content-type")?.includes("application/json")) {
-      return await req.json();
-    }
-    if (req.headers.get("content-type")?.includes("application/x-www-form-urlencoded")) {
-      const form = await req.formData();
-      const obj: BodyAny = {};
-      form.forEach((v, k) => (obj[k] = v));
-      return obj;
-    }
-    const text = await req.text();
-    try {
-      return JSON.parse(text);
-    } catch {
-      return { _raw: text };
-    }
-  } catch (e) {
-    return { _parseError: String(e) };
+// Admin 初期化（多重初期化防止）
+if (!admin.apps.length) {
+  const keyJson = process.env.FIREBASE_ADMIN_SDK_KEY_JSON;
+  if (!keyJson) {
+    console.error("FIREBASE_ADMIN_SDK_KEY_JSON is missing");
+  } else {
+    admin.initializeApp({
+      credential: admin.credential.cert(JSON.parse(keyJson) as admin.ServiceAccount),
+    });
   }
-}
-
-function pickEmail(b: BodyAny): string | null {
-  if (!b || typeof b !== "object") return null;
-  const candidates = [
-    b.email,
-    b.user?.email,
-    b.data?.email,
-    b.credentials?.email,
-    b.payload?.email,
-  ];
-  const found = candidates.find((x) => typeof x === "string" && x.includes("@"));
-  return found || null;
 }
 
 export async function POST(req: NextRequest) {
-  const body = await safeParseJson(req);
-  const email = pickEmail(body);
+  try {
+    const { idToken } = await req.json();
+    if (!idToken || typeof idToken !== "string") {
+      return NextResponse.json({ ok: false, error: "NO_ID_TOKEN" }, { status: 400 });
+    }
+    if (!admin.apps.length) {
+      return NextResponse.json({ ok: false, error: "SERVER_MISCONFIGURED_NO_ADMIN" }, { status: 500 });
+    }
 
-  if (!email) {
-    return NextResponse.json(
-      { ok: false, error: "INVALID_PAYLOAD_NO_EMAIL", debug: { body } },
-      { status: 400 }
-    );
+    // idToken を検証して email を取得
+    const decoded = await admin.auth().verifyIdToken(idToken);
+    const email = decoded.email;
+    const emailVerified = decoded.email_verified === true;
+
+    if (!email) {
+      return NextResponse.json({ ok: false, error: "NO_EMAIL_IN_TOKEN" }, { status: 400 });
+    }
+
+    // 許可メール判定
+    const raw = process.env.ALLOWED_EMAILS ?? process.env.ALLOWED_EMAIL ?? "";
+    const allowList = raw.split(",").map(s => s.trim().toLowerCase()).filter(Boolean);
+    if (!allowList.length) {
+      return NextResponse.json({ ok: false, error: "SERVER_MISCONFIGURED_NO_ALLOWED_EMAILS" }, { status: 500 });
+    }
+
+    const allowed = allowList.includes(email.toLowerCase());
+    if (!allowed) {
+      return NextResponse.json({ ok: false, error: "FORBIDDEN", email }, { status: 403 });
+    }
+
+    // （必要なら emailVerified を必須に）
+    // if (!emailVerified) return NextResponse.json({ ok:false, error:"EMAIL_NOT_VERIFIED" }, { status: 403 });
+
+    return NextResponse.json({ ok: true, email, emailVerified });
+  } catch (e) {
+    console.error("LOGIN_API_ERROR", e);
+    return NextResponse.json({ ok: false, error: "SERVER_ERROR" }, { status: 500 });
   }
-
-  const raw = process.env.ALLOWED_EMAILS ?? process.env.ALLOWED_EMAIL ?? "";
-  const allowList = raw.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
-
-  if (!allowList.length) {
-    return NextResponse.json(
-      { ok: false, error: "SERVER_MISCONFIGURED_NO_ALLOWED_EMAILS" },
-      { status: 500 }
-    );
-  }
-
-  if (!allowList.includes(email.toLowerCase())) {
-    return NextResponse.json({ ok: false, error: "FORBIDDEN", email }, { status: 403 });
-  }
-
-  return NextResponse.json({ ok: true });
 }
