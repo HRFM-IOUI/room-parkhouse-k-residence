@@ -3,7 +3,7 @@ import React from "react";
 import { useRouter } from "next/navigation";
 
 const icons = [
-  { src: "/svg/logo-black.png", label: "X", href: "#" },
+  { src: "/svg/logo-black.png", label: "X", href: "#https://twitter.com/parkhouse_kamiR/" },
   { src: "/svg/line-icon.png", label: "LINE", href: "https://line.me/R/ti/p/@667zhzws" },
 ];
 
@@ -71,10 +71,8 @@ export default function FooterSection() {
       <div className="w-full bg-white/97 py-10 pb-5 border-t border-[#e7e0c9] z-10">
         <div className="max-w-[1200px] mx-auto">
           <div className="flex flex-wrap justify-start gap-x-12 gap-y-3 text-[#7b7361] text-[15.3px] border-b border-[#e2dbc6] pb-2 font-light">
-            <a href="#">パーソナルデータについて</a>
             <a href="#">プライバシーポリシー</a>
-            <a href="#">サイトご利用にあたって</a>
-            <a href="#">外部送信について</a>
+            <a href="#">サイトご利用にあたって</a> 
           </div>
           <div className="flex flex-wrap justify-start gap-x-8 gap-y-2 text-[#7b7361] text-[14.2px] pt-3 pb-2 font-light">
             <a href="#">アクセシビリティ</a>
