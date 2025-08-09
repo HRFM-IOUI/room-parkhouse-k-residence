@@ -6,9 +6,8 @@ import { FiEye, FiEyeOff, FiRotateCcw, FiRotateCw } from "react-icons/fi";
 
 // カテゴリ一覧
 const categories = [
-  "こども", "まちづくり", "みどり・環境", "福祉", "選挙",
-  "都政", "障碍者", "行政改革", "高齢者", "議会",
-  "学校", "差別・人権", "文化・芸術", "住まい", "その他"
+  "理事会", "検討委員会", "管理組合", "管理室", "暮らしと防災",
+"その他"
 ];
 
 // react-select用オプション
