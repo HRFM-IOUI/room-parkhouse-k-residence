@@ -12,30 +12,39 @@ export default function HeroLayout() {
 
   return (
     <div
-      className="min-h-screen flex flex-col"
+      // iOSの100vh問題を吸収
+      className="min-h-screen supports-[height:100dvh]:min-h-[100dvh] flex flex-col overflow-x-hidden"
       style={{
         background:
           "linear-gradient(120deg, #f8fafc 0%, #f5f5f5 70%, #e0e8eb 100%)",
       }}
     >
-      {/* 1. StickyBar（追尾スリムガラス帯・z-50） */}
+      {/* 1. 追従バー */}
       <StickyBar />
 
-      {/* 2. Header本体 */}
-      <Header />
-      <div className="mb-0 sm:mb-15" /> {/* ここを追加！ */}
+      {/* 2. 中身は縦積み＋余白はspaceで管理 */}
+      <main className="flex-1 flex flex-col space-y-6 sm:space-y-10">
+        {/* Header */}
+        <Header />
 
-      {/* 3. Heroバナー */}
-      <div className="mb-10 relative">
-        <HeroBanner />
-        {/* ← ここにはもうPanel入れません */}
-      </div>
+        {/* Heroバナー */}
+        <section className="relative">
+          <HeroBanner />
+        </section>
+      </main>
 
-      {/* 左下アクセシビリティフローティングボタン */}
-      <AccessibilityFloatingButton onOpen={() => setAccessOpen(true)} />
-      <AccessibilityModal open={accessOpen} onClose={() => setAccessOpen(false)} />
+      {/* アクセシビリティUI */}
+      <AccessibilityFloatingButton
+        onOpen={() => setAccessOpen(true)}
+        // 実装側でstyle受け取れるなら安全域を渡す（なければこの発想を中で反映）
+        // style={{ position: 'fixed', left: 12, bottom: 'calc(16px + env(safe-area-inset-bottom))', zIndex: 60 }}
+      />
+      <AccessibilityModal
+        open={accessOpen}
+        onClose={() => setAccessOpen(false)}
+      />
 
-      {/* 4. フッター */}
+      {/* 4. フッターは一番下に固定されやすいように */}
       <FooterSection />
     </div>
   );

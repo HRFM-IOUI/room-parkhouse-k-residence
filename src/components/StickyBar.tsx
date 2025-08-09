@@ -5,29 +5,46 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 export default function StickyBar() {
-  const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
-  const [showBar, setShowBar] = useState<boolean>(true);
-  const lastScroll = useRef<number>(0);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [showBar, setShowBar] = useState(true);
+  const lastScroll = useRef(0);
+  const stopTimer = useRef<NodeJS.Timeout | null>(null);
+  const ticking = useRef(false);
   const router = useRouter();
 
   useEffect(() => {
-    const handleScroll = () => {
-      const current = window.scrollY;
-      if (current > lastScroll.current && current > 32) setShowBar(false);
-      else if (current < lastScroll.current) setShowBar(true);
-      clearTimeout(timeoutRef.current!);
-      timeoutRef.current = setTimeout(() => setShowBar(true), 210);
-      lastScroll.current = current;
+    const onScroll = () => {
+      if (ticking.current) return;
+      ticking.current = true;
+
+      requestAnimationFrame(() => {
+        const y = window.scrollY;
+        const delta = y - lastScroll.current;
+
+        // 上端近くでは常に表示
+        if (y < 16) setShowBar(true);
+        else {
+          // ヒステリシスを持たせて誤判定を防ぐ
+          if (delta > 4 && y > 24) setShowBar(false); // 下スクロール→隠す
+          else if (delta < -4) setShowBar(true);      // 上スクロール→出す
+        }
+
+        if (stopTimer.current) clearTimeout(stopTimer.current);
+        // スクロール停止後にふわっと再表示（短め）
+        stopTimer.current = setTimeout(() => setShowBar(true), 220);
+
+        lastScroll.current = y;
+        ticking.current = false;
+      });
     };
-    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
-      window.removeEventListener("scroll", handleScroll);
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      window.removeEventListener("scroll", onScroll);
+      if (stopTimer.current) clearTimeout(stopTimer.current);
     };
   }, []);
 
-  // メニュー名とパスを対応させる
   const navItems = [
     { label: "物件情報", path: "/property" },
     { label: "ライフスタイル", path: "/lifestyle" },
@@ -37,25 +54,30 @@ export default function StickyBar() {
 
   return (
     <>
+      {/* sticky + safe-area（ノッチ対応） */}
       <div
         className={`
-          w-full sticky top-0 z-50
-          transition-transform duration-500 pointer-events-auto
-          ${showBar ? "translate-y-0" : "-translate-y-28"}
+          w-full sticky z-50
+          transition-transform duration-300
+          pointer-events-auto
+          ${showBar ? "translate-y-0" : "-translate-y-[64px]"}
         `}
-        style={{ willChange: "transform" }}
+        style={{
+          top: "max(0px, env(safe-area-inset-top))",
+          willChange: "transform",
+        }}
       >
         <div
           className={`
-            mx-auto
-            bg-white/90 backdrop-blur-xl shadow-[0_4px_38px_0_rgba(212,175,55,0.14)]
-            mt-3
+            mx-auto mt-3
             w-full max-w-[1600px] h-[52px]
             rounded-[20px] border border-[#ececec]
             px-2 md:px-12 xl:px-16
             flex items-center justify-between
-            transition-all duration-500
+            transition-[box-shadow,background-color,backdrop-filter] duration-300
             group
+            bg-white/90 backdrop-blur-xl
+            shadow-[0_4px_38px_0_rgba(212,175,55,0.14)]
           `}
           style={{
             fontFamily:
@@ -85,12 +107,12 @@ export default function StickyBar() {
             </div>
           </div>
 
-          {/* ナビゲーション（PC） */}
+          {/* ナビ（PC） */}
           <nav className="hidden md:flex flex-1 gap-9 text-gray-800 font-medium text-[15.5px] items-center min-w-0">
-            {navItems.map(({ label, path }, i) => (
+            {navItems.map(({ label, path }) => (
               <Link
                 href={path}
-                key={i}
+                key={path}
                 className="px-1.5 py-1 relative group transition font-medium tracking-tight whitespace-nowrap cursor-pointer"
                 style={{ fontWeight: 500 }}
               >
@@ -100,7 +122,7 @@ export default function StickyBar() {
             ))}
           </nav>
 
-          {/* CTA（PCのみ） */}
+          {/* CTA（PC） */}
           <div className="hidden md:flex items-center gap-4 ml-12">
             <button
               className="
@@ -110,10 +132,7 @@ export default function StickyBar() {
                 border border-[#ecd98b]
                 min-w-0
               "
-              style={{
-                letterSpacing: "0.03em",
-                boxShadow: "0 1px 8px #d4af3750",
-              }}
+              style={{ letterSpacing: "0.03em", boxShadow: "0 1px 8px #d4af3750" }}
               onClick={() => router.push("/login")}
             >
               ログイン
@@ -130,22 +149,26 @@ export default function StickyBar() {
             </button>
           </div>
 
-          {/* MENUボタン（常時表示・モバイル右端） */}
+          {/* MENU（常時表示・モバイル最優先でタップしやすく） */}
           <button
             className="
-              flex items-center gap-1 px-2 py-1 md:px-5 md:py-2 rounded-full border border-gray-300
+              flex items-center gap-1 md:gap-2
+              px-3 py-2 md:px-5 md:py-2
+              rounded-full border border-gray-300
               bg-white/90 hover:bg-[#faf3d1]/80 transition text-gray-700 font-semibold
-              text-[11px] md:text-[14px] shadow-sm ml-auto md:ml-2 min-w-0
+              text-[13px] md:text-[14px] shadow-sm ml-auto md:ml-2 min-w-0
             "
             onClick={() => setDrawerOpen(true)}
+            aria-label="メニューを開く"
           >
-            <span className="text-xs">MENU</span>
+            <span>MENU</span>
             <svg
               className="h-4 w-4 md:h-5 md:w-5 text-[#d4af37]"
               fill="none"
               stroke="currentColor"
               strokeWidth="3"
               viewBox="0 0 24 24"
+              aria-hidden="true"
             >
               <line x1="4" y1="7" x2="20" y2="7" />
               <line x1="4" y1="12" x2="20" y2="12" />
@@ -155,7 +178,7 @@ export default function StickyBar() {
         </div>
       </div>
 
-      {/* Drawer menu */}
+      {/* Drawer menu（z-indexはStickyBarを超える値にしてね） */}
       <Drawermenu open={drawerOpen} onClose={() => setDrawerOpen(false)} />
     </>
   );
