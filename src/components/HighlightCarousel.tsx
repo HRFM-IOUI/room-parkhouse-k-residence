@@ -39,7 +39,7 @@ type HighlightPost = {
   title: string;
   blocks?: { type: string; content: string }[];
   image?: string;
-  category?: string[];  // ←ココを配列型に
+  category?: string[];  
   createdAt: string | number | { seconds?: number };
 };
 type Props = { posts: HighlightPost[]; };
