@@ -31,8 +31,8 @@ export default function StickyBar() {
   const navItems = [
     { label: "物件情報", path: "/property" },
     { label: "ライフスタイル", path: "/lifestyle" },
-    { label: "施設サービス", path: "/facility" },
     { label: "アクセス", path: "/access" },
+    { label: "資料/アーカイブ", path: "/archive" },
   ];
 
   return (
