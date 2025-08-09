@@ -1,123 +1,144 @@
-"use client"; 
-import React, { useState } from "react";
+"use client";
+import React, { useState, KeyboardEvent, MouseEvent } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import ShareButtons from "@/components/ShareButtons";
 
-type Block = {
-  type: "heading" | "text" | "image" | "video";
-  content: string;
-};
+
+function isString(val: unknown): val is string {
+  return typeof val === "string";
+}
+function formatDate(dateVal: string | number | { seconds?: number }): string {
+  if (!dateVal) return "";
+  let d: Date;
+  if (typeof dateVal === "object" && dateVal !== null && "seconds" in dateVal && typeof (dateVal as { seconds: unknown }).seconds === "number") {
+    d = new Date((dateVal as { seconds: number }).seconds * 1000);
+  } else {
+    d = new Date(dateVal as string | number);
+  }
+  return `発行日：${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
+}
+type Block = { type: "heading" | "text" | "image" | "video"; content: string; };
 type Post = {
   id: string;
   title: string;
   blocks?: Block[];
   image?: string;
-  category?: string;
+  category?: string[];   // ← 複数カテゴリに変更
   createdAt: string | number | { seconds?: number };
 };
+const DEFAULT_IMAGE = "/eyecatch.jpg";
 
-const DEFAULT_IMAGE = "/phoc.png";
-
-// 型ガード関数
-function isString(val: any): val is string {
-  return typeof val === "string";
-}
-
-function formatDate(dateVal: string | number | { seconds?: number }): string {
-  if (!dateVal) return "";
-  let d: Date;
-  if (
-    typeof dateVal === "object" &&
-    "seconds" in dateVal &&
-    typeof dateVal.seconds === "number"
-  ) {
-    d = new Date((dateVal.seconds ?? 0) * 1000);
-  } else {
-    d = new Date(dateVal as string | number);
-  }
-  return d.toLocaleDateString("ja-JP", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
-
-type Props = { post: Post };
-
-export default function HighlightHeroCard({ post }: Props) {
+export default function HighlightHeroCard({ post }: { post: Post }) {
   const router = useRouter();
   const [isFading, setIsFading] = useState(false);
 
-  // 安全なfirstImage抽出
+  // 画像
   const firstImage =
     isString(post.image)
       ? post.image
-      : post.blocks?.find((b: Block) => b.type === "image" && isString(b.content))?.content ||
-        DEFAULT_IMAGE;
+      : post.blocks?.find((b) => b.type === "image" && isString(b.content))?.content || DEFAULT_IMAGE;
 
-  // 安全なdescription抽出
+  // 概要文
   const description =
-    post.blocks?.find((b: Block) => b.type === "text" && isString(b.content))?.content?.slice(0, 80) || "";
+    post.blocks?.find((b) => b.type === "text" && isString(b.content))?.content?.slice(0, 78) || "";
 
-  // カード全体クリックでfade out後にページ遷移
-  const handleCardClick = (e: React.MouseEvent | React.KeyboardEvent) => {
+  // カードクリック
+  const handleCardClick = (e: MouseEvent<HTMLDivElement> | KeyboardEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsFading(true);
     setTimeout(() => {
       router.push(`/posts/${isString(post.id) ? post.id : ""}`);
-    }, 220); // 0.22秒
+    }, 220);
+  };
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "Enter" || e.key === " ") handleCardClick(e);
   };
 
   return (
     <motion.div
-      initial={{ opacity: 1 }}
-      animate={{ opacity: isFading ? 0 : 1 }}
+      initial={{ opacity: 1, y: 0 }}
+      animate={{ opacity: isFading ? 0 : 1, y: isFading ? 20 : 0 }}
       transition={{ duration: 0.22, ease: [0.33, 1, 0.68, 1] }}
       className={`
-        group w-full flex flex-col sm:flex-row bg-white rounded-3xl shadow-xl border border-gray-200 overflow-hidden
-        hover:shadow-2xl hover:-translate-y-0.5 transition-all duration-200 ease-in-out
-        min-h-[200px] cursor-pointer
+        group w-full flex flex-col sm:flex-row
+        bg-gradient-to-br from-[#f8fafd] via-[#f5f8fe] to-[#e5eaf3]
+        rounded-3xl shadow-[0_2px_18px_#19234913,0_1.5px_10px_#aaa2] border border-[#e7ebf3]
+        overflow-hidden hover:shadow-[0_6px_28px_#24325b21] hover:-translate-y-0.5 transition-all duration-200
+        min-h-[255px] cursor-pointer relative
       `}
-      style={{ pointerEvents: isFading ? "none" : "auto" } as any} 
+      style={{
+        pointerEvents: isFading ? "none" : "auto",
+        fontFamily: "'Noto Serif JP', '游明朝', serif",
+        background: "linear-gradient(105deg,#f8fafd 80%,#e5eaf3 100%)",
+      }}
       tabIndex={0}
       role="button"
-      aria-label={`Read article: ${isString(post.title) ? post.title : ""}`}
+      aria-label={`記事を読む: ${isString(post.title) ? post.title : ""}`}
       onClick={handleCardClick}
-      onKeyDown={e => {
-        if (e.key === "Enter" || e.key === " ") handleCardClick(e);
-      }}
+      onKeyDown={handleKeyDown}
     >
-      {/* 画像セクション */}
-      <div className="sm:w-1/2 w-full h-[200px] sm:h-auto relative flex-shrink-0">
+      {/* 画像エリア */}
+      <div className="sm:w-1/2 w-full aspect-[16/10] sm:aspect-auto relative flex-shrink-0 bg-[#e6eaf2]">
         {isString(firstImage) && (
           <Image
             src={firstImage}
-            alt={isString(post.title) ? post.title : "image"}
-            width={430}
-            height={280}
+            alt={isString(post.title) ? post.title : "サムネイル画像"}
+            width={520}
+            height={320}
             className="w-full h-full object-cover"
             priority
+            style={{
+              borderRight: "1px solid #d4d7e3",
+              background: "#f5f8fa",
+              borderRadius: "0",
+            }}
           />
         )}
       </div>
-      {/* テキストセクション */}
-      <div className="sm:w-1/2 w-full p-6 flex flex-col justify-center min-w-0 relative">
-        <span className="inline-block bg-[#e3e8fc] text-xs text-[#192349] font-semibold px-2 py-0.5 rounded-full mb-2">
-          {isString(post.category)
-            ? post.category.charAt(0).toUpperCase() + post.category.slice(1)
-            : "Uncategorized"}
-        </span>
-        <h2 className="text-2xl font-extrabold text-[#192349] mb-2 leading-snug group-hover:underline">
+      {/* テキストエリア */}
+      <div className="sm:w-1/2 w-full px-8 py-7 flex flex-col justify-center min-w-0 relative bg-white/85">
+        {/* カテゴリ（複数バッジで表示） */}
+        <div className="flex flex-wrap gap-2 mb-2">
+          {(Array.isArray(post.category) ? post.category : []).map((cat) => (
+            <span
+              key={cat}
+              className="inline-block bg-gradient-to-r from-[#e7eaf3]/70 to-[#f8fafd]/90 text-xs text-[#234] font-bold px-3 py-1 rounded-full tracking-wider border border-[#d3d7e9] shadow-sm"
+            >
+              {cat}
+            </span>
+          ))}
+        </div>
+        {/* タイトル */}
+        <h2
+          className="text-[1.65rem] font-extrabold text-[#192349] mb-3 leading-snug group-hover:underline transition-all"
+          style={{
+            fontFamily: "'Noto Serif JP', '游明朝', serif",
+            letterSpacing: "0.025em",
+            textShadow: "0 2px 12px #fff9f5a6",
+          }}
+        >
           {isString(post.title) ? post.title : ""}
         </h2>
-        <p className="text-base text-gray-500 mb-1 line-clamp-2">{description}</p>
-        <p className="text-xs text-gray-400">{formatDate(post.createdAt)}</p>
-        {/* シェアボタン・下部に配置（リンク外なのでイベントを阻害しません） */}
-        <div className="flex justify-end sm:justify-end mt-3">
+        {/* 概要文 */}
+        <p className="text-base text-[#334] mb-2 font-light" style={{ letterSpacing: "0.01em" }}>
+          {description}
+        </p>
+        {/* 日付 */}
+        <p className="text-xs text-[#4e5a7c] font-medium">{formatDate(post.createdAt)}</p>
+        {/* シェアボタン */}
+        <div className="flex justify-end mt-4">
           <ShareButtons title={isString(post.title) ? post.title : ""} />
         </div>
+        {/* ホバー演出：右下「続きを読む」 */}
+        <span
+          className="absolute right-7 bottom-5 text-[1.06rem] text-[#4250a7] font-bold opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none select-none"
+          style={{ letterSpacing: "0.045em" }}
+        >
+          続きを読む →
+        </span>
       </div>
     </motion.div>
   );

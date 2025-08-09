@@ -3,17 +3,24 @@ import React, { useState } from "react";
 import { db } from "@/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
-// YouTube URLやIDを抽出する関数
+// YouTube URLやIDを抽出する関数（Shorts/通常/youtu.be全部対応）
 function extractYouTubeId(input: string): string {
   try {
+    // youtu.be/xxxxxx
     if (input.includes("youtu.be/")) {
-      return input.split("youtu.be/")[1].split(/[?&]/)[0];
+      return input.split("youtu.be/")[1].split(/[?&/]/)[0];
     }
+    // shorts/xxxxxx
+    if (input.includes("youtube.com/shorts/")) {
+      return input.split("youtube.com/shorts/")[1].split(/[?&/]/)[0];
+    }
+    // youtube.com/watch?v=xxxxxx
     if (input.includes("youtube.com/watch")) {
       const params = new URLSearchParams(input.split("?")[1]);
       return params.get("v") || input;
     }
-    return input; // IDだけの場合
+    // IDだけ
+    return input;
   } catch {
     return input;
   }
@@ -127,12 +134,12 @@ export default function VideoEditor() {
         {/* YouTube動画ID または ファイルURL */}
         {form.type === "youtube" ? (
           <label style={{ fontWeight: 700, color: "#192349" }}>
-            YouTube動画IDまたはURL
+            YouTube動画IDまたはURL（Shortsにも対応）
             <input
               name="url"
               value={form.url}
               onChange={handleChange}
-              placeholder="例: dQw4w9WgXcQ または https://youtu.be/dQw4w9WgXcQ"
+              placeholder="例: dQw4w9WgXcQ, https://youtu.be/dQw4w9WgXcQ, https://youtube.com/shorts/dQw4w9WgXcQ"
               style={{
                 marginTop: 7,
                 width: "100%",
@@ -145,7 +152,7 @@ export default function VideoEditor() {
               required
             />
             <span style={{ fontSize: 12, color: "#81879b", marginLeft: 8 }}>
-              ※動画IDまたはYouTubeのURLどちらでもOK
+              ※動画ID/YouTubeのURL/Shorts全てOK
             </span>
           </label>
         ) : (

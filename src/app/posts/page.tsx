@@ -4,13 +4,14 @@ import {
   collection,
   query,
   orderBy,
+  where,
   getDocs,
   DocumentData,
   QueryDocumentSnapshot,
 } from "firebase/firestore";
 import { db } from "@/firebase";
 
-import StickyBar from "@/components/StickyBar";
+import StickyHeader from "@/components/StickyHeader";
 import SearchModal from "@/components/ActionsModal";
 import HighlightHeroCard from "@/components/HighlightHeroCard";
 import HighlightCarousel from "@/components/HighlightCarousel";
@@ -18,41 +19,21 @@ import CategorySidebar from "@/components/CategorySidebar";
 import CategorySwiper from "@/components/CategorySwiper";
 import ArticleGrid from "@/components/ArticleGrid";
 
-// 英語配列
 const CATEGORY_LIST = [
-  "vision", "specs", "announcement", "usecase", "research",
-  "culture", "technology", "education", "policy", "philosophy",
-  "worldview", "uncategorized"
+  "理事会", "検討委員会", "管理組合", "管理室", "地域情報",
+  "暮らしと防災",
 ];
-
-const CATEGORY_MAP: Record<string, string> = {
-  vision: "管理組合",
-  specs: "理事会",
-  announcement: "検討委員会",
-  usecase: "防災",
-  research: "地域情報",
-  culture: "管理室より",
-  technology: "ペット",
-  education: "季節イベント",
-  policy: "環境美化",
-  philosophy: "今期理事",
-  worldview: "その他",
-};
-
-type Block = {
-  type: "heading" | "text" | "image" | "video";
-  content: string;
-};
 
 type Post = {
   id: string;
   title: string;
   createdAt: string | number | { seconds?: number };
-  blocks?: Block[];
+  richtext: string;
   image?: string;
   tags?: string[];
-  category?: string;
+  category?: string[];
   highlight?: boolean;
+  slug?: string; 
 };
 
 export default function PostsPage() {
@@ -66,46 +47,55 @@ export default function PostsPage() {
   useEffect(() => {
     const fetchPosts = async () => {
       setLoading(true);
+      setError(null);
+
       try {
-        const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
-        const snapshot = await getDocs(q);
-        const fetched = snapshot.docs.map(
-          (doc: QueryDocumentSnapshot<DocumentData>): Post => {
-            const data = doc.data();
-            return {
-              id: doc.id,
-              title: typeof data.title === "string" ? data.title : "",
-              createdAt: data.createdAt ?? "",
-              blocks: Array.isArray(data.blocks)
-                ? data.blocks
-                    .filter(
-                      (b: Block) =>
-                        typeof b === "object" &&
-                        b !== null &&
-                        "type" in b &&
-                        "content" in b &&
-                        typeof b.type === "string" &&
-                        typeof b.content === "string" &&
-                        ["heading", "text", "image", "video"].includes(b.type)
-                    )
-                    .map((b: Block) => ({ type: b.type, content: b.content }))
-                : [],
-              image: typeof data.image === "string" ? data.image : undefined,
-              tags: Array.isArray(data.tags)
-                ? data.tags.filter((t: string) => typeof t === "string")
-                : [],
-              category:
-                typeof data.category === "string"
-                  ? data.category
-                  : "uncategorized",
-              highlight: !!data.highlight,
-            };
-          }
+        const q = query(
+          collection(db, "posts"),
+          where("status", "==", "published"),
+          orderBy("createdAt", "desc")
         );
+
+        const snapshot = await getDocs(q);
+
+        const fetched: Post[] = snapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            title: typeof data.title === "string" ? data.title : "",
+            createdAt: data.createdAt ?? "",
+            richtext: typeof data.richtext === "string" ? data.richtext : "",
+            image: typeof data.image === "string" ? data.image : undefined,
+            tags: Array.isArray(data.tags) ? data.tags.filter((t: unknown) => typeof t === "string") : [],
+            category: Array.isArray(data.category) ? data.category : [data.category].filter(Boolean),
+            highlight: !!data.highlight,
+            slug: typeof data.slug === "string" ? data.slug : "",
+          };
+        }).filter(p => !!p.richtext && p.richtext !== "<p></p>");
         setPosts(fetched);
       } catch (err) {
-        setError("データの取得に失敗しました。もう一度お試しください。");
-        console.error("Error fetching posts:", err);
+        // 型安全ガードでエラー処理！
+        if (
+          typeof err === "object" &&
+          err !== null &&
+          "message" in err &&
+          typeof (err as { message: string }).message === "string"
+        ) {
+          const message = (err as { message: string }).message;
+          if (message.includes("The query requires an index")) {
+            const urlMatch = message.match(/https:\/\/console\.firebase\.google\.com\/[^\s"]+/);
+            setError(
+              "⚠️ Firestore複合インデックスが必要です。" +
+              (urlMatch ? `\nインデックスを下記から作成してください：\n${urlMatch[0]}` : "") +
+              "\nインデックス作成後、数分で自動反映されます。"
+            );
+          } else {
+            setError("記事の取得に失敗しました。しばらく経ってから、もう一度お試しください。");
+          }
+          console.error("Error fetching posts:", err);
+        } else {
+          setError("記事の取得に失敗しました。しばらく経ってから、もう一度お試しください。");
+        }
       } finally {
         setLoading(false);
       }
@@ -114,25 +104,28 @@ export default function PostsPage() {
     fetchPosts();
   }, []);
 
+  // ハイライト記事の抽出
   const highlightPosts = posts.filter((post) => post.highlight);
   const heroPost = highlightPosts[0] || null;
   const carouselHighlightPosts = highlightPosts.slice(1);
 
-  const filteredPosts = posts
-    .filter((post) => {
-      const titleStr = typeof post.title === "string" ? post.title : "";
-      const catStr = typeof post.category === "string" ? post.category : "";
-      const matchTitle = titleStr.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchCategory = !selectedCategory || catStr === selectedCategory;
-      const notHero = !heroPost || post.id !== heroPost.id;
-      return matchTitle && matchCategory && notHero;
-    })
-    .slice(0, 4);
+  // 検索・カテゴリ絞り込み
+  const filteredPosts = posts.filter((post) => {
+    const titleStr = typeof post.title === "string" ? post.title : "";
+    const matchTitle = titleStr.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchCategory =
+      !selectedCategory ||
+      (Array.isArray(post.category) && post.category.includes(selectedCategory));
+    const notHero = !heroPost || post.id !== heroPost.id;
+    return matchTitle && matchCategory && notHero;
+  });
 
   return (
     <>
-      <StickyBar />
+      {/* 固定ヘッダー */}
+      <StickyHeader onSearchClick={() => setSearchOpen(true)} />
 
+      {/* 検索モーダル */}
       <SearchModal
         isOpen={isSearchOpen}
         onClose={() => setSearchOpen(false)}
@@ -140,86 +133,90 @@ export default function PostsPage() {
         setSearchTerm={setSearchTerm}
       />
 
+      {/* メイン */}
       <main
         className="
-          max-w-[1200px] w-full mx-auto
-          px-2 sm:px-4 md:px-10 py-6 sm:py-10 md:py-12
-          overflow-x-hidden
-          bg-gradient-to-br from-[#fdfbf7] via-[#f5f4eb] to-[#e9e3cb]
-          rounded-3xl shadow-2xl border border-[#ece2c1]/60
-          min-h-[85vh]
+          max-w-[1200px] w-full mx-auto px-4 sm:px-10 pt-14 pb-20
+          bg-[#f8fafd]
         "
         style={{
-          backdropFilter: "blur(9px)",
-          boxShadow: "0 6px 48px 0 #ecd98b25, 0 1px 8px 0 #fffbe644",
+          fontFamily: "'Noto Serif JP', '游明朝', serif",
         }}
+        aria-label="最新記事"
       >
         <h2
-          className="
-            text-2xl sm:text-3xl md:text-4xl font-extrabold mb-6 sm:mb-8 tracking-tight
-            text-[#bfa14a] drop-shadow-lg
-          "
+          className="text-[2.1rem] md:text-[2.6rem] font-extrabold text-[#1e2433] mb-10 tracking-wide border-l-8 border-[#20305c] pl-4 bg-gradient-to-r from-[#fff] via-[#f2f4fb] to-[#fafdff]"
           style={{
-            fontFamily: '"Playfair Display", "Noto Serif JP", serif',
             letterSpacing: "0.04em",
-            textShadow: "0 3px 18px #fffbe633, 0 0px 2px #ecd98b",
+            fontFamily: "'Noto Serif JP', serif",
           }}
         >
-          最新記事
+          <span className="drop-shadow-md">最新記事</span>
+          <br className="sm:hidden" />
+          <span className="block text-lg mt-2 text-[#005099] font-medium font-sans tracking-wide"
+                style={{ letterSpacing: "0.09em" }}>
+            — 練馬区議会議員 池尻成二 公式 —
+          </span>
         </h2>
 
-        {loading && <p className="text-center text-gray-500 py-12">記事を読み込み中...</p>}
-        {error && <p className="text-center text-red-500 py-12">{error}</p>}
+        {loading && (
+          <div className="text-center text-gray-400 py-16 text-base tracking-wider" aria-live="polite">
+            記事を読み込んでいます…
+          </div>
+        )}
+        {error && (
+          <div className="text-center text-red-600 py-14 text-base font-medium tracking-wide whitespace-pre-line" aria-live="assertive" role="alert">
+            {error}
+          </div>
+        )}
 
         {!loading && !error && (
-          <div className="flex flex-col lg:flex-row gap-4 lg:gap-8 w-full">
-            {/* サイドバー（PCのみ） */}
-            <div className="
-              hidden lg:block min-w-[200px] max-w-[260px] flex-shrink-0
-              rounded-2xl bg-white/70 border border-[#ecd98b]/30 shadow
-              backdrop-blur-md py-6 px-2
-              sticky top-[92px]
-              h-fit
-            ">
+          <div className="flex flex-col lg:flex-row gap-10 w-full">
+            {/* サイドバー */}
+            <aside className="hidden lg:block min-w-[210px] max-w-[240px]">
               <CategorySidebar
                 categories={CATEGORY_LIST}
                 selected={selectedCategory}
                 setSelected={setSelectedCategory}
-                categoryMap={CATEGORY_MAP}
               />
-            </div>
+            </aside>
 
-            {/* メインエリア */}
-            <div className="w-full min-w-0 flex flex-col">
-              <div className="lg:hidden mb-4 sm:mb-6 py-2">
+            {/* メインカラム */}
+            <section className="w-full min-w-0 flex flex-col">
+              {/* モバイルカテゴリ */}
+              <div className="lg:hidden mb-8">
                 <CategorySwiper
                   categories={CATEGORY_LIST}
                   selected={selectedCategory}
                   setSelected={setSelectedCategory}
-                  categoryMap={CATEGORY_MAP}
                 />
               </div>
 
+              {/* ピックアップ記事 */}
               {heroPost && (
-                <section className="mb-6 sm:mb-8">
+                <section className="mb-10" aria-label="ピックアップ記事">
                   <HighlightHeroCard post={heroPost} />
                 </section>
               )}
 
-              <section>
+              {/* 記事グリッド */}
+              <section aria-label="記事一覧">
                 {filteredPosts.length === 0 ? (
-                  <p className="text-center text-gray-400 py-12">該当する記事がありません。</p>
+                  <div className="text-center text-gray-400 py-14 text-base font-medium tracking-wide">
+                    該当する記事は見つかりませんでした。
+                  </div>
                 ) : (
                   <ArticleGrid posts={filteredPosts} />
                 )}
               </section>
 
+              {/* 特集・おすすめ */}
               {carouselHighlightPosts.length > 0 && (
-                <section className="mt-8 sm:mt-12">
+                <section className="mt-12" aria-label="特集・おすすめ記事">
                   <HighlightCarousel posts={carouselHighlightPosts} />
                 </section>
               )}
-            </div>
+            </section>
           </div>
         )}
       </main>
