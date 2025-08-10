@@ -148,13 +148,13 @@ export default function PostsPage() {
           bg-[#f8fafd]
         "
         style={{ fontFamily: "'Noto Serif JP', '游明朝', serif" }}
-        aria-label="最新記事"
+        aria-label="ニュース"
       >
         <h2
           className="text-[2.1rem] md:text-[2.6rem] font-extrabold text-[#1e2433] mb-10 tracking-wide border-l-8 border-[#20305c] pl-4 bg-gradient-to-r from-[#fff] via-[#f2f4fb] to-[#fafdff]"
           style={{ letterSpacing: "0.04em", fontFamily: "'Noto Serif JP', serif" }}
         >
-          <span className="drop-shadow-md">最新記事</span>
+          <span className="drop-shadow-md">ニュース</span>
           <br className="sm:hidden" />
           <span
             className="block text-lg mt-2 text-[#005099] font-medium font-sans tracking-wide"
