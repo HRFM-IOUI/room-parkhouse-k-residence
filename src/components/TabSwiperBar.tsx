@@ -6,13 +6,7 @@ import "swiper/css";
 import "swiper/css/autoplay";
 
 const tabItems = [
-  "重要なお知らせ",
-  "ペットのいる暮らし",
-  "地域情報",
-  "季節情報",
   "管理室より",
-  "検討委員会活動",
-  "暮らしと防災",
 ];
 
 export default function TabSwiperBar() {
