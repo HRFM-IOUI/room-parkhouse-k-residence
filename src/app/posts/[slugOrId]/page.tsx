@@ -307,7 +307,7 @@ export default function PostDetail() {
         description: metaDesc,
         abstract: metaDesc,
         mainEntityOfPage: canonicalUrl,
-        sameAs: ["https://twitter.com/iksesans"],
+        sameAs: ["https://twitter.com/"],
       }
     : null;
 
