@@ -85,7 +85,7 @@ export default function MainEditorPage(props: Props) {
     return null;
   }
   const firstImage = extractThumbnailFromHTML(props.body) || "";
-  const showEyecatch = props.eyecatch || firstImage || "/eyecatch.jpg";
+  const showEyecatch = props.eyecatch || firstImage || "/phoc.png";
 
   // TipTapエディタ
   const editor = useEditor({

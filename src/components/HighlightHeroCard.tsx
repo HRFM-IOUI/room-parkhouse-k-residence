@@ -28,7 +28,7 @@ type Post = {
   category?: string[];   // ← 複数カテゴリに変更
   createdAt: string | number | { seconds?: number };
 };
-const DEFAULT_IMAGE = "/eyecatch.jpg";
+const DEFAULT_IMAGE = "/phoc.png";
 
 export default function HighlightHeroCard({ post }: { post: Post }) {
   const router = useRouter();
