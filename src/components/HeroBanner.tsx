@@ -1,8 +1,9 @@
+// components/HeroBanner.tsx
 "use client";
 import React, { useRef, useEffect, useState } from "react";
 import { ParallaxProvider, Parallax } from "react-scroll-parallax";
 import { getFirestore, collection, query, orderBy, limit, getDocs } from "firebase/firestore";
-import { app as firebaseApp } from "@/firebase"; // ←firebase初期化ファイルのパスを合わせてね
+import { app as firebaseApp } from "@/firebase";
 
 const brandFont = '"Playfair Display", "Noto Serif JP", serif';
 
@@ -15,11 +16,7 @@ const slides = [
 const DISPLAY_TIME = 5200;
 const DISSOLVE_TIME = 2000;
 
-type NewsItem = {
-  id: string;
-  date: string;   // yyyy.mm.dd
-  title: string;
-};
+type NewsItem = { id: string; date: string; title: string; };
 
 export default function HeroBanner() {
   const [news, setNews] = useState<NewsItem[]>([]);
@@ -41,21 +38,16 @@ export default function HeroBanner() {
         const postsRef = collection(db, "posts");
         const q = query(postsRef, orderBy("createdAt", "desc"), limit(3));
         const snapshot = await getDocs(q);
-
         const fetched = snapshot.docs.map((doc) => {
-          const data = doc.data();
+          const data = doc.data() as any;
           let dateStr = "";
           if (data.createdAt?.toDate) {
             const d = data.createdAt.toDate();
-            dateStr = `${d.getFullYear()}.${(d.getMonth() + 1)
-              .toString()
-              .padStart(2, "0")}.${d.getDate().toString().padStart(2, "0")}`;
+            dateStr = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(
+              d.getDate()
+            ).padStart(2, "0")}`;
           }
-          return {
-            id: doc.id,
-            date: dateStr,
-            title: data.title ?? "(タイトル未設定)",
-          };
+          return { id: doc.id, date: dateStr, title: data.title ?? "(タイトル未設定)" };
         });
         setNews(fetched);
       } catch {
@@ -65,10 +57,10 @@ export default function HeroBanner() {
     fetchNews();
   }, []);
 
-  // 画像事前ロード＋onload監視
+  // 画像事前ロード
   useEffect(() => {
     let loadedCount = 0;
-    imgsRef.current = slides.map(({ img }, idx) => {
+    imgsRef.current = slides.map(({ img }) => {
       const el = new window.Image();
       el.src = img;
       el.onload = () => {
@@ -81,23 +73,19 @@ export default function HeroBanner() {
   }, []);
 
   useEffect(() => {
-    if (allLoaded) {
-      setTimeout(() => setShowImg(false), 80);
-    }
+    if (allLoaded) setTimeout(() => setShowImg(false), 80);
   }, [allLoaded]);
 
-  // クロスディゾルブアニメ
+  // クロスディゾルブ
   useEffect(() => {
     if (next === null || showImg) return;
     let start: number | null = null;
     setProgress(0);
-
-    function animate(now: number) {
+    const animate = (now: number) => {
       if (!start) start = now;
       let t = (now - start) / DISSOLVE_TIME;
       if (t > 1) t = 1;
       setProgress(t);
-
       const canvas = canvasRef.current;
       const ctx = canvas?.getContext("2d");
       const img1 = imgsRef.current[current];
@@ -119,21 +107,15 @@ export default function HeroBanner() {
         setNext(null);
         setProgress(1);
       }
-    }
-    rafRef.current = requestAnimationFrame(animate);
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
+    rafRef.current = requestAnimationFrame(animate);
+    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
   }, [next, current, showImg]);
 
   useEffect(() => {
     if (next !== null || showImg) return;
-    timeoutRef.current = setTimeout(() => {
-      setNext((current + 1) % slides.length);
-    }, DISPLAY_TIME);
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    };
+    timeoutRef.current = setTimeout(() => setNext((current + 1) % slides.length), DISPLAY_TIME);
+    return () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); };
   }, [current, next, showImg]);
 
   function getCanvasSize() {
@@ -142,6 +124,7 @@ export default function HeroBanner() {
     return [1440, 440];
   }
 
+  // 現在フレーム描画
   useEffect(() => {
     if (next !== null || showImg) return;
     const [w, h] = getCanvasSize();
@@ -157,6 +140,7 @@ export default function HeroBanner() {
     }
   }, [current, next, showImg]);
 
+  // リサイズ時再描画
   useEffect(() => {
     function handleResize() {
       if (next !== null || showImg) return;
@@ -182,9 +166,7 @@ export default function HeroBanner() {
     <ParallaxProvider>
       <section
         className="w-full flex justify-center items-center min-h-[320px] sm:min-h-[540px] py-8 sm:py-16 px-0 relative"
-        style={{
-          background: "linear-gradient(120deg, #f8f6ef 0%, #f5f7fa 70%, #ecf4ef 100%)",
-        }}
+        style={{ background: "linear-gradient(120deg, #f8f6ef 0%, #f5f7fa 70%, #ecf4ef 100%)" }}
       >
         {/* 上層パララックス光グラデーション */}
         <Parallax speed={-34} className="absolute inset-0 w-full h-full z-0 pointer-events-none select-none">
@@ -202,17 +184,21 @@ export default function HeroBanner() {
             <rect x="1250" y="90" width="160" height="8" rx="4" fill="#fffbe6" opacity="0.10" />
           </svg>
         </Parallax>
+
         <div className="w-full max-w-[96vw] sm:max-w-[1340px] mx-auto px-2 relative z-20">
           <div className="relative w-full aspect-[16/8] sm:aspect-[16/7] rounded-[2.2rem] shadow-2xl overflow-visible border border-[#ecd98b]/40 bg-white/60 backdrop-blur-2xl flex items-center justify-center">
             {/* 金の光沢縁 */}
-            <div className="absolute -inset-1.5 rounded-[2.6rem] pointer-events-none"
+            <div
+              className="absolute -inset-1.5 rounded-[2.6rem] pointer-events-none"
               style={{
                 background: "linear-gradient(90deg,#ecd98b44 0%,#fffbe6bb 80%,#ecd98b44 100%)",
                 opacity: 0.45,
                 filter: "blur(4px)",
                 zIndex: 8,
-              }} />
-            {/* Main画像/Canvas */}
+              }}
+            />
+
+            {/* メイン画像/Canvas */}
             {showImg ? (
               <img
                 src={slides[current].img}
@@ -247,32 +233,47 @@ export default function HeroBanner() {
               />
             )}
 
-            {/* ブランドラベル（PCのみ表示、スマホは非表示） */}
+            {/* ⬇ 白文字を目立たせるための暗めオーバーレイ */}
+            <div
+              className="absolute inset-0 rounded-[2.1rem] pointer-events-none z-10"
+              style={{
+                background:
+                  "linear-gradient(120deg, rgba(0,0,0,.38) 0%, rgba(0,0,0,.22) 55%, rgba(0,0,0,.10) 100%)",
+              }}
+            />
+
+            {/* ブランドラベル（PCのみ） */}
             <div
               className="absolute left-0 top-0 px-8 py-5 z-20 flex flex-col gap-4 pointer-events-none select-none hidden sm:flex"
               style={{ fontFamily: brandFont }}
             >
-              <span className="text-[1.86rem] sm:text-[1.8rem] font-extrabold tracking-tight text-[#bfa14a] drop-shadow-md"
+              <span
+                className="text-[1.86rem] sm:text-[1.8rem] font-extrabold tracking-tight text-white"
                 style={{
-                  textShadow: "0 1px 18px #fffbe688, 0 0px 2px #ecd98b",
                   letterSpacing: "0.05em",
-                  fontFamily: brandFont,
+                  textShadow: "0 2px 22px rgba(0,0,0,.45), 0 0 1px rgba(0,0,0,.6)",
                 }}
               >
                 The Parkhouse Kamishakujii Residence
               </span>
-              <span className="block text-[1.12rem] sm:text-[1.32rem] text-[#8c8348] tracking-wide font-bold opacity-80"
-                style={{ letterSpacing: "0.12em" }}>
+              <span
+                className="block text-[1.12rem] sm:text-[1.32rem] font-bold"
+                style={{
+                  color: "rgba(255,255,255,.92)",
+                  letterSpacing: "0.12em",
+                  textShadow: "0 1px 14px rgba(0,0,0,.35)",
+                }}
+              >
                 上石神井 － The Parkhouse Residence
               </span>
             </div>
 
-            {/* NEWS欄（PC重なり/スマホ下段） */}
+            {/* NEWS欄（PC）— 白地のまま可読性キープ */}
             <div className="hidden sm:flex">
               <div
                 className="
                   w-[360px] h-full absolute top-0 right-0
-                  bg-white/86
+                  bg-white/88
                   rounded-r-[2.1rem]
                   flex flex-col justify-center px-10 py-10
                   border-l border-[#ecd98b]/30
@@ -280,18 +281,13 @@ export default function HeroBanner() {
                   backdrop-blur-[8px]
                   z-30
                 "
-                style={{
-                  boxShadow: "0 8px 44px 0 rgba(212,175,55,0.18)",
-                  fontFamily: brandFont,
-                }}
+                style={{ boxShadow: "0 8px 44px 0 rgba(212,175,55,0.18)", fontFamily: brandFont }}
               >
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-2 h-7 bg-gradient-to-b from-[#ecd98b] to-[#fffbe6] rounded-full" />
-                  <div className="text-[#bfa14a] font-bold text-xs tracking-widest font-mono">
-                    NEWS
-                  </div>
+                  <div className="text-[#bfa14a] font-bold text-xs tracking-widest font-mono">NEWS</div>
                 </div>
-                <ul className="space-y-5 text-[16.2px] text-[#594f28]">
+                <ul className="space-y-5 text-[16.2px] text-[#3b361e]">
                   {news.length === 0 ? (
                     <li className="text-gray-400 text-sm">お知らせはありません</li>
                   ) : (
@@ -305,28 +301,30 @@ export default function HeroBanner() {
                 </ul>
                 <button
                   className="mt-8 text-[#bfa14a] text-[14.5px] font-bold hover:underline hover:text-[#d4af37] transition"
-                  onClick={() => window.location.href = "/posts"}
+                  onClick={() => (window.location.href = "/posts")}
                 >
                   すべて見る →
                 </button>
               </div>
             </div>
           </div>
-          {/* スマホ：画像の下にNEWS欄 */}
+
+          {/* スマホ：画像の下にNEWS欄（こちらも白地） */}
           <div className="block sm:hidden mt-8 w-full flex justify-center">
-            <div className="
-              w-full max-w-[670px]
-              bg-white/90
-              rounded-[1.7rem]
-              flex flex-col justify-center px-7 py-8 border border-[#ecd98b]/40 shadow-inner
-            " style={{ fontFamily: brandFont }}>
+            <div
+              className="
+                w-full max-w-[670px]
+                bg-white/92
+                rounded-[1.7rem]
+                flex flex-col justify-center px-7 py-8 border border-[#ecd98b]/40 shadow-inner
+              "
+              style={{ fontFamily: brandFont }}
+            >
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-2 h-7 bg-gradient-to-b from-[#ecd98b] to-[#fffbe6] rounded-full" />
-                <div className="text-[#bfa14a] font-bold text-xs tracking-widest font-mono">
-                  NEWS
-                </div>
+                <div className="text-[#bfa14a] font-bold text-xs tracking-widest font-mono">NEWS</div>
               </div>
-              <ul className="space-y-5 text-[16px] text-[#594f28]">
+              <ul className="space-y-5 text-[16px] text-[#3b361e]">
                 {news.length === 0 ? (
                   <li className="text-gray-400 text-sm">お知らせはありません</li>
                 ) : (
@@ -340,7 +338,7 @@ export default function HeroBanner() {
               </ul>
               <button
                 className="mt-8 text-[#bfa14a] text-[14px] font-bold hover:underline hover:text-[#d4af37] transition"
-                onClick={() => window.location.href = "/posts"}
+                onClick={() => (window.location.href = "/posts")}
               >
                 すべて見る →
               </button>
