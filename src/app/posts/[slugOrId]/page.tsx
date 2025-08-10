@@ -6,7 +6,6 @@ import {
   collection,
   query,
   where,
-  orderBy,
   getDocs,
   getDoc,
   doc,
@@ -44,10 +43,8 @@ const LOGO_URL = "https://";
 const TWITTER_SITE = "@";
 const GA_MEASUREMENT_ID = ""; // 差し替え必須
 
-// Discover・AI強化用ワード
-const MUST_HAVE_WORDS = [""];
+const MUST_HAVE_WORDS: string[] = [];
 
-// 要約ロジック強化
 function extractSummaryV2(html: string) {
   if (!html) return "";
   const txt = html
@@ -65,13 +62,16 @@ function extractSummaryV2(html: string) {
   return summary;
 }
 
-// 必須ワードをdescription等に追記
 function enrichSummary(summary: string) {
   for (const word of MUST_HAVE_WORDS) {
     if (!summary.includes(word)) summary += ` ${word}`;
   }
   return summary.trim();
 }
+
+// 日付と並び替え用
+const toMs = (v: any) =>
+  typeof v === "object" && v?.seconds ? v.seconds * 1000 : Number(new Date(v));
 
 export default function PostDetail() {
   const params = useParams();
@@ -86,7 +86,7 @@ export default function PostDetail() {
   const [commentText, setCommentText] = useState("");
   const [loading, setLoading] = useState(true);
 
-  // ✅ 公開記事のみ取得（dataの型安全化！）
+  // ✅ 公開記事のみ取得（複合インデックス回避）
   useEffect(() => {
     if (!slugOrId) return;
     setLoading(true);
@@ -97,27 +97,22 @@ export default function PostDetail() {
         | DocumentSnapshot<DocumentData>
         | null = null;
 
-      // slug検索（published限定）
-      const snap = await getDocs(
-        query(
-          collection(db, "posts"),
-          where("slug", "==", slugOrId),
-          where("status", "==", "published")
-        )
-      );
-      if (!snap.empty) docSnap = snap.docs[0];
+      // 1) id一致で取得
+      const byId = await getDoc(doc(db, "posts", slugOrId));
+      if (byId.exists()) docSnap = byId;
 
-      // id検索（published限定）
+      // 2) idでなければ slug 単独で検索（status は後でチェック）
       if (!docSnap) {
-        const _docSnap = await getDoc(doc(db, "posts", slugOrId));
-        if (_docSnap.exists() && _docSnap.data() && _docSnap.data()!.status === "published") {
-          docSnap = _docSnap;
-        }
+        const snap = await getDocs(
+          query(collection(db, "posts"), where("slug", "==", slugOrId))
+        );
+        if (!snap.empty) docSnap = snap.docs[0];
       }
 
       if (docSnap) {
         const data = docSnap.data();
-        if (!data) {
+        // 公開判定はコード側で（status フィルターと orderBy の複合を避けるため）
+        if (!data || data.status !== "published") {
           setPost(null);
           setLoading(false);
           return;
@@ -144,30 +139,30 @@ export default function PostDetail() {
     })();
   }, [slugOrId]);
 
-  // 前後記事・関連記事（publishedのみ）
+  // 前後記事・関連記事（publishedのみ）— where 単独 + クライアントソート
   useEffect(() => {
     if (!slugOrId || !post) return;
     (async () => {
-      const q = query(
-        collection(db, "posts"),
-        where("status", "==", "published"),
-        orderBy("createdAt", "desc")
+      const snapshot = await getDocs(
+        query(collection(db, "posts"), where("status", "==", "published"))
       );
-      const snapshot = await getDocs(q);
-      const arr: Post[] = snapshot.docs.map((doc) => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          title: typeof data.title === "string" ? data.title : "",
-          createdAt: data.createdAt ?? "",
-          content: typeof data.richtext === "string" ? data.richtext : "",
-          category: Array.isArray(data.category)
-            ? data.category
-            : [data.category].filter(Boolean),
-          slug: data.slug ?? "",
-          tags: Array.isArray(data.tags) ? data.tags : [],
-        };
-      });
+
+      const arr: Post[] = snapshot.docs
+        .map((d) => {
+          const data = d.data();
+          return {
+            id: d.id,
+            title: typeof data.title === "string" ? data.title : "",
+            createdAt: data.createdAt ?? "",
+            content: typeof data.richtext === "string" ? data.richtext : "",
+            category: Array.isArray(data.category)
+              ? data.category
+              : [data.category].filter(Boolean),
+            slug: data.slug ?? "",
+            tags: Array.isArray(data.tags) ? data.tags : [],
+          };
+        })
+        .sort((a, b) => toMs(b.createdAt) - toMs(a.createdAt));
 
       const idx = arr.findIndex(
         (item) => item.slug === slugOrId || item.id === slugOrId
@@ -175,7 +170,7 @@ export default function PostDetail() {
       setPrevPost(idx < arr.length - 1 ? arr[idx + 1] : null);
       setNextPost(idx > 0 ? arr[idx - 1] : null);
 
-      // 関連記事
+      // 関連記事（カテゴリ交差）
       const related = arr
         .filter(
           (item) =>
@@ -189,19 +184,19 @@ export default function PostDetail() {
     })();
   }, [slugOrId, post]);
 
-  // コメント一覧取得
+  // コメント一覧取得 — orderBy を使わず昇順ソートをフロントで
   useEffect(() => {
     if (!post?.id) return;
     (async () => {
-      const q = query(collection(db, "comments"), orderBy("createdAt", "asc"));
-      const snapshot = await getDocs(q);
+      const snapshot = await getDocs(query(collection(db, "comments")));
       setComments(
         snapshot.docs
-          .filter((doc) => doc.data().postId === post.id)
-          .map((doc) => ({
-            text: doc.data().text ?? "",
-            createdAt: doc.data().createdAt ?? "",
+          .filter((d) => d.data().postId === post.id)
+          .map((d) => ({
+            text: d.data().text ?? "",
+            createdAt: d.data().createdAt ?? "",
           }))
+          .sort((a, b) => toMs(a.createdAt) - toMs(b.createdAt))
       );
     })();
   }, [post?.id]);
@@ -215,16 +210,17 @@ export default function PostDetail() {
       createdAt: new Date(),
     });
     setCommentText("");
-    // 再取得
-    const q = query(collection(db, "comments"), orderBy("createdAt", "asc"));
-    const snapshot = await getDocs(q);
+
+    // 再取得（同じくフロントで昇順）
+    const snapshot = await getDocs(query(collection(db, "comments")));
     setComments(
       snapshot.docs
-        .filter((doc) => doc.data().postId === post.id)
-        .map((doc) => ({
-          text: doc.data().text ?? "",
-          createdAt: doc.data().createdAt ?? "",
+        .filter((d) => d.data().postId === post.id)
+        .map((d) => ({
+          text: d.data().text ?? "",
+          createdAt: d.data().createdAt ?? "",
         }))
+        .sort((a, b) => toMs(a.createdAt) - toMs(b.createdAt))
     );
   };
 
@@ -236,9 +232,9 @@ export default function PostDetail() {
         typeof dateVal === "object" &&
         dateVal !== null &&
         "seconds" in dateVal &&
-        typeof dateVal.seconds === "number"
+        typeof (dateVal as FirestoreTimestamp).seconds === "number"
       ) {
-        d = new Date(dateVal.seconds * 1000);
+        d = new Date((dateVal as FirestoreTimestamp).seconds * 1000);
       } else if (typeof dateVal === "string" || typeof dateVal === "number") {
         d = new Date(dateVal);
       } else {
@@ -272,9 +268,7 @@ export default function PostDetail() {
     ? `${BASE_URL}/posts/${post.slug || post.id}`
     : `${BASE_URL}/posts/${slugOrId}`;
   const ogUrl =
-    typeof window !== "undefined"
-      ? window.location.href
-      : canonicalUrl;
+    typeof window !== "undefined" ? window.location.href : canonicalUrl;
   const ogType = post ? "article" : "website";
   const publishedTime = post?.createdAt
     ? new Date(
@@ -283,9 +277,8 @@ export default function PostDetail() {
           : post.createdAt
       ).toISOString()
     : "";
-  const modifiedTime = publishedTime; // updatedAt追加するなら差し替え
+  const modifiedTime = publishedTime;
 
-  // Discover・AI要約・構造化データ（JSON-LD最適化）
   const jsonLd = post
     ? {
         "@context": "https://schema.org",
@@ -341,9 +334,7 @@ export default function PostDetail() {
             dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
           />
         )}
-        {/* 404/非公開時はnoindex */}
         {!post && <meta name="robots" content="noindex" />}
-        {/* Google Analytics GA4 */}
         <script
           async
           src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
@@ -370,11 +361,15 @@ export default function PostDetail() {
           ← 記事一覧に戻る
         </button>
 
-        {loading && <p className="text-center text-gray-400">記事を読み込み中です...</p>}
+        {loading && (
+          <p className="text-center text-gray-400">記事を読み込み中です...</p>
+        )}
 
         {!loading && !post && (
           <div className="bg-white rounded-xl p-12 text-center mt-12 shadow border">
-            <h1 className="text-2xl font-bold text-red-500 mb-4">404 - 記事が見つかりません</h1>
+            <h1 className="text-2xl font-bold text-red-500 mb-4">
+              404 - 記事が見つかりません
+            </h1>
             <p className="text-gray-600">
               指定された記事は公開されていないか、削除された可能性があります。
             </p>
@@ -396,7 +391,6 @@ export default function PostDetail() {
               <p className="text-xs sm:text-sm text-gray-400 text-center">
                 {formatDate(post.createdAt)}
               </p>
-              {/* カテゴリ表示（複数対応） */}
               {Array.isArray(post.category) && post.category.length > 0 && (
                 <div className="flex flex-wrap justify-center gap-2 mt-2">
                   {post.category.map((cat) => (
@@ -410,14 +404,15 @@ export default function PostDetail() {
                 </div>
               )}
             </div>
+
             <article className="article-content" style={{ marginTop: 24, marginBottom: 16 }}>
               <div dangerouslySetInnerHTML={{ __html: post.content }} />
             </article>
+
             <div className="flex justify-center mt-8">
               <ShareButtons title={post.title} />
             </div>
 
-            {/* タグ */}
             {Array.isArray(post.tags) && post.tags.length > 0 && (
               <div className="flex flex-wrap justify-center gap-1 mt-2">
                 {post.tags.map((tag) => (
@@ -431,7 +426,6 @@ export default function PostDetail() {
               </div>
             )}
 
-            {/* 前後記事ナビ */}
             <div className="flex justify-between mt-10 mb-2">
               {prevPost ? (
                 <button
@@ -455,7 +449,6 @@ export default function PostDetail() {
               )}
             </div>
 
-            {/* 関連記事 */}
             {relatedPosts.length > 0 && (
               <section className="mt-12 border-t pt-8">
                 <h3 className="font-bold mb-2 text-lg">関連記事</h3>
@@ -496,7 +489,9 @@ export default function PostDetail() {
                 {comments.length === 0 && <p>まだコメントはありません。</p>}
                 {comments.map((c, i) => (
                   <div key={i} className="mb-2 p-2 bg-gray-50 rounded">
-                    <span className="text-sm text-gray-500">{formatDate(c.createdAt)}</span>
+                    <span className="text-sm text-gray-500">
+                      {formatDate(c.createdAt)}
+                    </span>
                     <div>{c.text}</div>
                   </div>
                 ))}
