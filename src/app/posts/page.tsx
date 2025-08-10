@@ -4,6 +4,7 @@ import {
   collection,
   query,
   where,
+  orderBy,
   getDocs,
   DocumentData,
   QueryDocumentSnapshot,
@@ -19,8 +20,7 @@ import CategorySwiper from "@/components/CategorySwiper";
 import ArticleGrid from "@/components/ArticleGrid";
 
 const CATEGORY_LIST = [
-  "理事会", "検討委員会", "管理組合", "管理室", "地域情報",
-  "暮らしと防災",
+  "理事会", "検討委員会", "管理組合", "管理室", "地域情報", "暮らしと防災",
 ];
 
 type Post = {
@@ -35,6 +35,9 @@ type Post = {
   slug?: string;
 };
 
+const toMs = (v: any) =>
+  typeof v === "object" && v?.seconds ? v.seconds * 1000 : Number(new Date(v));
+
 export default function PostsPage() {
   const [isSearchOpen, setSearchOpen] = useState(false);
   const [posts, setPosts] = useState<Post[]>([]);
@@ -47,32 +50,32 @@ export default function PostsPage() {
     const fetchPosts = async () => {
       setLoading(true);
       setError(null);
-
       try {
-        // ★ 複合インデックス不要：where のみ。並びは後でソート。
+        // ★ 作成済みインデックス使用：status == "published" + orderBy(createdAt desc)
         const q = query(
           collection(db, "posts"),
-          where("status", "==", "published")
+          where("status", "==", "published"),
+          orderBy("createdAt", "desc")
         );
-
         const snapshot = await getDocs(q);
 
-        const toMs = (v: any) =>
-          typeof v === "object" && v?.seconds
-            ? v.seconds * 1000
-            : Number(new Date(v));
-
-        const fetched: Post[] = snapshot.docs
-          .map((doc: QueryDocumentSnapshot<DocumentData>) => {
+        const mapped: Post[] = snapshot.docs.map(
+          (doc: QueryDocumentSnapshot<DocumentData>) => {
             const data = doc.data();
+            // 本文が無い過去データがあっても落ちないようフォールバック（任意）
+            const richtext =
+              typeof data.richtext === "string"
+                ? data.richtext
+                : typeof data.content === "string"
+                ? data.content
+                : "";
+
             return {
               id: doc.id,
               title: typeof data.title === "string" ? data.title : "",
               createdAt: data.createdAt ?? "",
-              richtext:
-                typeof data.richtext === "string" ? data.richtext : "",
-              image:
-                typeof data.image === "string" ? data.image : undefined,
+              richtext,
+              image: typeof data.image === "string" ? data.image : undefined,
               tags: Array.isArray(data.tags)
                 ? data.tags.filter((t: unknown) => typeof t === "string")
                 : [],
@@ -82,18 +85,23 @@ export default function PostsPage() {
               highlight: !!data.highlight,
               slug: typeof data.slug === "string" ? data.slug : "",
             };
-          })
-          .filter((p) => !!p.richtext && p.richtext !== "<p></p>")
-          // ★ クライアント側で新しい順にソート
-          .sort((a, b) => toMs(b.createdAt) - toMs(a.createdAt));
+          }
+        );
 
-        setPosts(fetched);
+        // ★ 1) idで重複除去（万一の二重混入対策）
+        const byId = new Map<string, Post>();
+        for (const p of mapped) byId.set(p.id, p);
+        const unique = Array.from(byId.values());
+
+        // ★ 2) 本文が完全に空のものは最終的に除外（必要なら緩めてもOK）
+        const withBody = unique.filter(
+          (p) => (p.richtext || "").replace(/<[^>]*>/g, "").trim().length > 0
+        );
+
+        setPosts(withBody);
       } catch (err) {
         console.error("Error fetching posts:", err);
-        // ★ インデックス作成リンクは出さない
-        setError(
-          "記事の取得に失敗しました。しばらく経ってから、もう一度お試しください。"
-        );
+        setError("記事の取得に失敗しました。しばらく経ってから、もう一度お試しください。");
       } finally {
         setLoading(false);
       }
@@ -102,23 +110,22 @@ export default function PostsPage() {
     fetchPosts();
   }, []);
 
-  // ハイライト記事の抽出
+  // ★ ハイライト記事は「ヒーロー＋カルーセル」にのみ使用
   const highlightPosts = posts.filter((post) => post.highlight);
   const heroPost = highlightPosts[0] || null;
   const carouselHighlightPosts = highlightPosts.slice(1);
 
-  // 検索・カテゴリ絞り込み
-  const filteredPosts = posts.filter((post) => {
+  // ★ グリッドは「非ハイライトのみ」を母集団にする（重複表示を防ぐ）
+  const gridSource = posts.filter((p) => !p.highlight);
+
+  // 検索・カテゴリ絞り込みは gridSource に対して行う
+  const filteredPosts = gridSource.filter((post) => {
     const titleStr = typeof post.title === "string" ? post.title : "";
-    const matchTitle = titleStr
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
+    const matchTitle = titleStr.toLowerCase().includes(searchTerm.toLowerCase());
     const matchCategory =
       !selectedCategory ||
-      (Array.isArray(post.category) &&
-        post.category.includes(selectedCategory));
-    const notHero = !heroPost || post.id !== heroPost.id;
-    return matchTitle && matchCategory && notHero;
+      (Array.isArray(post.category) && post.category.includes(selectedCategory));
+    return matchTitle && matchCategory;
   });
 
   return (
@@ -140,17 +147,12 @@ export default function PostsPage() {
           max-w-[1200px] w-full mx-auto px-4 sm:px-10 pt-14 pb-20
           bg-[#f8fafd]
         "
-        style={{
-          fontFamily: "'Noto Serif JP', '游明朝', serif",
-        }}
+        style={{ fontFamily: "'Noto Serif JP', '游明朝', serif" }}
         aria-label="最新記事"
       >
         <h2
           className="text-[2.1rem] md:text-[2.6rem] font-extrabold text-[#1e2433] mb-10 tracking-wide border-l-8 border-[#20305c] pl-4 bg-gradient-to-r from-[#fff] via-[#f2f4fb] to-[#fafdff]"
-          style={{
-            letterSpacing: "0.04em",
-            fontFamily: "'Noto Serif JP', serif",
-          }}
+          style={{ letterSpacing: "0.04em", fontFamily: "'Noto Serif JP', serif" }}
         >
           <span className="drop-shadow-md">最新記事</span>
           <br className="sm:hidden" />
@@ -163,10 +165,7 @@ export default function PostsPage() {
         </h2>
 
         {loading && (
-          <div
-            className="text-center text-gray-400 py-16 text-base tracking-wider"
-            aria-live="polite"
-          >
+          <div className="text-center text-gray-400 py-16 text-base tracking-wider" aria-live="polite">
             記事を読み込んでいます…
           </div>
         )}
@@ -209,7 +208,7 @@ export default function PostsPage() {
                 </section>
               )}
 
-              {/* 記事グリッド */}
+              {/* 記事グリッド（非ハイライトのみ） */}
               <section aria-label="記事一覧">
                 {filteredPosts.length === 0 ? (
                   <div className="text-center text-gray-400 py-14 text-base font-medium tracking-wide">
@@ -220,7 +219,7 @@ export default function PostsPage() {
                 )}
               </section>
 
-              {/* 特集・おすすめ */}
+              {/* 特集・おすすめ（ヒーロー以外のハイライト） */}
               {carouselHighlightPosts.length > 0 && (
                 <section className="mt-12" aria-label="特集・おすすめ記事">
                   <HighlightCarousel posts={carouselHighlightPosts} />
