@@ -1,3 +1,4 @@
+// C:\Users\ik391\Desktop\parkhouse-k-residence\src\app\posts\[slugOrId]\page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -36,15 +37,16 @@ type Comment = {
   createdAt: string | number | FirestoreTimestamp;
 };
 
-const SITE_TITLE = "公式ブログ";
-const AUTHOR = "マンション";
-const BASE_URL = "https://p";
+const SITE_TITLE = "お知らせ";
+const AUTHOR = "TPHKR";
+const BASE_URL = "https://www.the-parkhouse-kamishakujii-residence-official.site/";
 const LOGO_URL = "https://";
-const TWITTER_SITE = "@";
-const GA_MEASUREMENT_ID = ""; // 差し替え必須
+const TWITTER_SITE = "@parkhouse_kamir"; // 公式X
+const GA_MEASUREMENT_ID = ""; // あれば設定
 
 const MUST_HAVE_WORDS: string[] = [];
 
+// 要約生成
 function extractSummaryV2(html: string) {
   if (!html) return "";
   const txt = html
@@ -61,7 +63,6 @@ function extractSummaryV2(html: string) {
   }
   return summary;
 }
-
 function enrichSummary(summary: string) {
   for (const word of MUST_HAVE_WORDS) {
     if (!summary.includes(word)) summary += ` ${word}`;
@@ -69,7 +70,7 @@ function enrichSummary(summary: string) {
   return summary.trim();
 }
 
-// 日付と並び替え用
+// 日付→ms
 const toMs = (v: any) =>
   typeof v === "object" && v?.seconds ? v.seconds * 1000 : Number(new Date(v));
 
@@ -86,7 +87,7 @@ export default function PostDetail() {
   const [commentText, setCommentText] = useState("");
   const [loading, setLoading] = useState(true);
 
-  // ✅ 公開記事のみ取得（複合インデックス回避）
+  // 公開記事取得（複合インデックス回避）
   useEffect(() => {
     if (!slugOrId) return;
     setLoading(true);
@@ -97,11 +98,11 @@ export default function PostDetail() {
         | DocumentSnapshot<DocumentData>
         | null = null;
 
-      // 1) id一致で取得
+      // 1) id一致
       const byId = await getDoc(doc(db, "posts", slugOrId));
       if (byId.exists()) docSnap = byId;
 
-      // 2) idでなければ slug 単独で検索（status は後でチェック）
+      // 2) idでなければ slug 単独検索（statusは後で判定）
       if (!docSnap) {
         const snap = await getDocs(
           query(collection(db, "posts"), where("slug", "==", slugOrId))
@@ -111,7 +112,6 @@ export default function PostDetail() {
 
       if (docSnap) {
         const data = docSnap.data();
-        // 公開判定はコード側で（status フィルターと orderBy の複合を避けるため）
         if (!data || data.status !== "published") {
           setPost(null);
           setLoading(false);
@@ -139,7 +139,7 @@ export default function PostDetail() {
     })();
   }, [slugOrId]);
 
-  // 前後記事・関連記事（publishedのみ）— where 単独 + クライアントソート
+  // 前後記事・関連記事
   useEffect(() => {
     if (!slugOrId || !post) return;
     (async () => {
@@ -170,7 +170,6 @@ export default function PostDetail() {
       setPrevPost(idx < arr.length - 1 ? arr[idx + 1] : null);
       setNextPost(idx > 0 ? arr[idx - 1] : null);
 
-      // 関連記事（カテゴリ交差）
       const related = arr
         .filter(
           (item) =>
@@ -184,7 +183,7 @@ export default function PostDetail() {
     })();
   }, [slugOrId, post]);
 
-  // コメント一覧取得 — orderBy を使わず昇順ソートをフロントで
+  // コメント一覧（フロントで昇順）
   useEffect(() => {
     if (!post?.id) return;
     (async () => {
@@ -211,7 +210,6 @@ export default function PostDetail() {
     });
     setCommentText("");
 
-    // 再取得（同じくフロントで昇順）
     const snapshot = await getDocs(query(collection(db, "comments")));
     setComments(
       snapshot.docs
@@ -224,7 +222,7 @@ export default function PostDetail() {
     );
   };
 
-  // Firestore日付→表示用文字列
+  // Firestore日付→表示
   function formatDate(dateVal: string | number | FirestoreTimestamp): string {
     try {
       let d: Date;
@@ -249,12 +247,8 @@ export default function PostDetail() {
     }
   }
 
-  // OGP画像抽出
-  function extractEyecatch(html: string) {
-    const m = html.match(/<img[^>]+src=['"]([^'"]+)['"]/);
-    return m?.[1] || "/eyecatch.jpg";
-  }
-  const eyecatch = post?.content ? extractEyecatch(post.content) : "/eyecatch.jpg";
+  // OGP画像 → 常に phoc.png を使用
+  const eyecatch = "/phoc.png";
 
   // SEO meta
   const metaTitle = post?.title ? `${post.title} | ${SITE_TITLE}` : "記事が見つかりません";
@@ -265,8 +259,8 @@ export default function PostDetail() {
     ...MUST_HAVE_WORDS,
   ].join(",");
   const canonicalUrl = post
-    ? `${BASE_URL}/posts/${post.slug || post.id}`
-    : `${BASE_URL}/posts/${slugOrId}`;
+    ? `${BASE_URL}posts/${post.slug || post.id}`
+    : `${BASE_URL}posts/${slugOrId}`;
   const ogUrl =
     typeof window !== "undefined" ? window.location.href : canonicalUrl;
   const ogType = post ? "article" : "website";
@@ -300,7 +294,7 @@ export default function PostDetail() {
         description: metaDesc,
         abstract: metaDesc,
         mainEntityOfPage: canonicalUrl,
-        sameAs: ["https://twitter.com/"],
+        sameAs: ["https://x.com/parkhouse_kamir"], // 公式X
       }
     : null;
 
@@ -335,6 +329,9 @@ export default function PostDetail() {
           />
         )}
         {!post && <meta name="robots" content="noindex" />}
+        {/* Xウィジェット */}
+        <script async src="https://platform.twitter.com/widgets.js"></script>
+        {/* GA */}
         <script
           async
           src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
@@ -405,7 +402,10 @@ export default function PostDetail() {
               )}
             </div>
 
-            <article className="article-content" style={{ marginTop: 24, marginBottom: 16 }}>
+            <article
+              className="article-content"
+              style={{ marginTop: 24, marginBottom: 16 }}
+            >
               <div dangerouslySetInnerHTML={{ __html: post.content }} />
             </article>
 
@@ -413,8 +413,34 @@ export default function PostDetail() {
               <ShareButtons title={post.title} />
             </div>
 
+            {/* 公式X セクション */}
+            <section className="mt-10 border-t pt-8">
+              <h3 className="font-bold mb-3 text-lg">公式X</h3>
+
+              {/* フォローボタン */}
+              <a
+                href="https://x.com/parkhouse_kamir?ref_src=twsrc%5Etfw"
+                className="twitter-follow-button"
+                data-show-count="false"
+              >
+                Follow @parkhouse_kamir
+              </a>
+
+              {/* タイムライン（必要なければこのブロックは削除可） */}
+              <div className="mt-4">
+                <a
+                  className="twitter-timeline"
+                  data-height="420"
+                  data-chrome="noheader nofooter noborders transparent"
+                  href="https://x.com/parkhouse_kamiR"
+                >
+                  Tweets by parkhouse_kamiR
+                </a>
+              </div>
+            </section>
+
             {Array.isArray(post.tags) && post.tags.length > 0 && (
-              <div className="flex flex-wrap justify-center gap-1 mt-2">
+              <div className="flex flex-wrap justify-center gap-1 mt-6">
                 {post.tags.map((tag) => (
                   <span
                     key={tag}
