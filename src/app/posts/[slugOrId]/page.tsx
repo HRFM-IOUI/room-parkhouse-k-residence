@@ -37,15 +37,15 @@ type Comment = {
   createdAt: string | number | FirestoreTimestamp;
 };
 
-const SITE_TITLE = "池尻成二 公式ブログ";
-const AUTHOR = "池尻成二";
-const BASE_URL = "https://ikejiriseiji.jp";
-const LOGO_URL = "https://ikejiriseiji.jp/eyecatch.jpg";
-const TWITTER_SITE = "@iksesans";
-const GA_MEASUREMENT_ID = "G-XXXXXXXXXX"; // 差し替え必須
+const SITE_TITLE = "公式ブログ";
+const AUTHOR = "マンション";
+const BASE_URL = "https://p";
+const LOGO_URL = "https://";
+const TWITTER_SITE = "@";
+const GA_MEASUREMENT_ID = ""; // 差し替え必須
 
 // Discover・AI強化用ワード
-const MUST_HAVE_WORDS = ["練馬区議会", "池尻成二", "議会", "政策", "福祉", "公式", "地域"];
+const MUST_HAVE_WORDS = [""];
 
 // 要約ロジック強化
 function extractSummaryV2(html: string) {
