@@ -46,9 +46,6 @@ export default function StickyBar() {
   }, []);
 
   const navItems = [
-    { label: "物件情報", path: "/property" },
-    { label: "ライフスタイル", path: "/lifestyle" },
-    { label: "アクセス", path: "/access" },
     { label: "資料/アーカイブ", path: "/archive" },
   ];
 
@@ -135,7 +132,7 @@ export default function StickyBar() {
               style={{ letterSpacing: "0.03em", boxShadow: "0 1px 8px #d4af3750" }}
               onClick={() => router.push("/login")}
             >
-              ログイン
+              管理ログイン
             </button>
             <button
               className="

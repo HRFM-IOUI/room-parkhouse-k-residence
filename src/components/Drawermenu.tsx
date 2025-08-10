@@ -1,89 +1,99 @@
+// components/Drawermenu.tsx
 "use client";
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-type Props = {
-  open: boolean;
-  onClose: () => void;
-};
+type Props = { open: boolean; onClose: () => void; };
+type MenuItem = { label: string; path: string; desc?: string; };
 
-type MenuItem = {
-  label: string;
-  color: string;
-  path?: string; // パスがあれば自動遷移
-};
+const PRIMARY_ITEMS: MenuItem[] = [
+  { label: "ログイン", path: "/login", desc: "会員向けページ" },
+  { label: "NEWS一覧", path: "/posts", desc: "最新のお知らせ" },
+  { label: "居住者ページ", path: "/residents", desc: "パスコード/各種手続き" }, // ←変更
+  { label: "資料 / アーカイブ", path: "/archive", desc: "議事録・配布資料" },     // ←変更
+];
 
-const menuItems: MenuItem[] = [
-  { label: "ログイン", path: "/login", color: "linear-gradient(100deg,#fffbe6 0%,#fff8dc 90%)" },
-  { label: "イベント", color: "linear-gradient(100deg,#f4ede2 0%,#fcf6ea 100%)" },
-  { label: "施設・サービス", color: "linear-gradient(90deg,#f2efdb 0%,#ebe2ca 100%)" },
-  { label: "管理組合", color: "linear-gradient(100deg,#faf4e0 0%,#f8ecd8 100%)" },
-  { label: "NEWS一覧", path: "/posts", color: "linear-gradient(90deg,#f7ead9 0%,#efe1c9 100%)" },
+const SECONDARY_ITEMS: MenuItem[] = [
+  { label: "プライバシーポリシー", path: "/privacy" },
+];
+
+const SOCIALS = [
+  { label: "X", href: "https://x.com/parkhouse_kamir", icon: "/svg/logo-black.png" },
+  { label: "LINE", href: "https://line.me/R/ti/p/@667zhzws", icon: "/svg/line-icon.png" },
 ];
 
 export default function Drawermenu({ open, onClose }: Props) {
   const router = useRouter();
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const searchRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (open) {
       document.body.style.overflow = "hidden";
+      setTimeout(() => searchRef.current?.focus(), 10);
     } else {
       document.body.style.overflow = "";
     }
-    return () => {
-      document.body.style.overflow = "";
-    };
+    return () => { document.body.style.overflow = ""; };
   }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  const go = (path: string) => { router.push(path); onClose(); };
 
   return (
     <div
-      className={`
-        fixed inset-0 z-[100] transition-all duration-400
-        flex flex-col
-        ${open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}
-      `}
-      style={{
-        background: "linear-gradient(120deg, #faf8ef 0%, #f5ecd8 85%, #ece1c4 100%)",
-        backdropFilter: "blur(12px)",
-      }}
+      role="dialog" aria-modal="true" aria-labelledby="drawer-title"
+      className={`fixed inset-0 z-[100] transition-opacity duration-300
+                  ${open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
+      style={{ background: "linear-gradient(120deg,#faf8ef 0%,#f5ecd8 85%,#ece1c4 100%)", backdropFilter: "blur(12px)" }}
+      onMouseDown={(e) => { if (panelRef.current && !panelRef.current.contains(e.target as Node)) onClose(); }}
     >
-      <div className="relative flex-1 overflow-y-auto overscroll-contain max-h-screen">
-        {/* 閉じるボタン */}
-        <button
-          className="
-            fixed top-6 right-6 sm:top-7 sm:right-12
-            bg-white/90 border border-[#dfc68e] rounded-full px-5 py-2
-            text-gray-300 font-bold text-2xl shadow-md
-            hover:bg-[#fff7d7] transition-all
-            z-[101]
-          "
-          onClick={onClose}
-          style={{ lineHeight: "0.8", fontSize: "1.0rem" }}
-          aria-label="メニューを閉じる"
-        >
-          ×
-        </button>
-
-        {/* サーチ・言語選択 */}
-        <div className="flex flex-col sm:flex-row justify-end items-center pt-20 sm:pt-16 pr-6 sm:pr-20 gap-5 sm:gap-8 w-full">
-          <button className="border border-gold-600 px-5 py-2 rounded-full text-gray-300 font-bold bg-white hover:bg-[#fff7d7] transition shadow-sm">
-            English
-          </button>
-          <div className="relative w-full sm:w-auto max-w-xs">
-            <input
-              type="text"
-              placeholder="サイト内を検索"
-              className="px-6 py-2 rounded-full border border-gray-300 text-[15px] outline-none shadow-sm bg-white min-w-[140px] sm:min-w-[220px] w-full sm:w-auto text-gray-800"
-              style={{
-                fontFamily: "Noto Sans JP, Yu Gothic, Arial, sans-serif",
-                letterSpacing: "0.01em",
-              }}
-            />
+      <div
+        ref={panelRef}
+        className={`relative mx-auto mt-6 sm:mt-10 w-[min(100%,940px)]
+                    rounded-3xl bg-white/86 border border-[#e7ddc5]
+                    shadow-[0_12px_50px_rgba(180,150,70,.18)]
+                    transition-transform duration-300 ${open ? "translate-y-0" : "-translate-y-2"}`}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        {/* ヘッダー */}
+        <div className="flex items-center justify-between px-6 sm:px-8 pt-6">
+          <h2 id="drawer-title" className="text-[18px] font-bold text-[#7f6b39] tracking-wide">メニュー</h2>
+          <div className="flex items-center gap-3 sm:gap-4">
+            {SOCIALS.map(s => (
+              <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer"
+                 aria-label={s.label}
+                 className="w-9 h-9 rounded-full bg-white/90 border border-[#dfc68e] shadow-sm flex items-center justify-center hover:scale-105 transition">
+                <img src={s.icon} alt={s.label} className="w-5 h-5" />
+              </a>
+            ))}
             <button
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-gold-600 font-bold text-xl bg-transparent"
-              tabIndex={-1}
+              onClick={onClose}
+              className="rounded-full bg-white/95 border border-[#dfc68e] px-4 py-2 text-[#7f6b39] font-bold shadow-sm hover:bg-[#fff7d7] transition"
+              aria-label="メニューを閉じる"
             >
-              <svg width={20} height={20} fill="none" viewBox="0 0 20 20">
+              閉じる
+            </button>
+          </div>
+        </div>
+
+        {/* 検索 */}
+        <div className="px-6 sm:px-8 pt-4">
+          <div className="relative">
+            <input
+              ref={searchRef}
+              type="text" placeholder="サイト内検索"
+              className="w-full rounded-full border border-[#e3d7b8] bg-white/95 px-5 py-3 pr-11 outline-none text-[15px] text-[#333]"
+            />
+            <button className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full hover:bg-[#fff7e2] transition" aria-label="検索">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                 <circle cx="9" cy="9" r="7.5" stroke="#be9b52" strokeWidth="2" />
                 <path d="M15 15l-3-3" stroke="#be9b52" strokeWidth="2" strokeLinecap="round" />
               </svg>
@@ -91,70 +101,31 @@ export default function Drawermenu({ open, onClose }: Props) {
           </div>
         </div>
 
-        {/* メインメニュー */}
-        <div className="
-          w-full flex flex-wrap justify-center gap-6 sm:gap-8 mt-10 mb-7
-          px-2 sm:px-0
-        ">
-          {menuItems.map((item, i) => (
-            <div
-              key={i}
-              className={`
-                flex flex-col items-center justify-center
-                shadow-xl rounded-2xl px-8 py-6 min-w-[135px] min-h-[68px] font-semibold text-[16px]
-                border border-[#e8dab3] transition-all hover:scale-105
-                cursor-pointer
-                w-full sm:w-auto
-                ${item.path ? "hover:bg-[#f7ecd7]/70" : ""}
-              `}
-              style={{
-                background: item.color,
-                color: "#bfa15a",
-              }}
-              tabIndex={item.path ? 0 : -1}
-              role={item.path ? "button" : undefined}
-              onClick={() => {
-                if (item.path) {
-                  router.push(item.path);
-                  onClose();
-                }
-              }}
-            >
-              {item.label}
-            </div>
-          ))}
+        {/* 主要メニュー */}
+        <div className="px-6 sm:px-8 py-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+            {PRIMARY_ITEMS.map(item => (
+              <button
+                key={item.path} onClick={() => go(item.path)}
+                className="group w-full rounded-2xl border border-[#e8dab3]
+                           bg-gradient-to-br from-[#fffaf0] to-[#f7ecd7]
+                           px-4 py-5 text-left hover:shadow-md hover:-translate-y-[1px] transition"
+              >
+                <div className="text-[#7f6b39] font-bold text-[15px]">{item.label}</div>
+                {item.desc && <div className="text-[#8d815f] text-xs mt-1 opacity-90">{item.desc}</div>}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* ナビセクション */}
-        <div className="
-          w-full flex flex-col sm:flex-row justify-between px-4 sm:px-24 mt-8 gap-6 sm:gap-0
-        ">
-          {/* 物件情報 */}
-          <div>
-            <div className="font-bold text-[18px] text-[#bfa15a] mb-2">管理組合</div>
-            <ul className="text-[15px] text-gray-700 font-light space-y-1">
-              <li>🏢 管理組合</li>
-              <li>理事会</li>
-              <li>管理室より</li>
-            </ul>
-          </div>
-          {/* コミュニティ */}
-          <div>
-            <div className="font-bold text-[18px] text-[#bfa15a] mb-2">コミュニティ</div>
-            <ul className="text-[15px] text-gray-700 font-light space-y-1">
-              <li>検討委員会</li>
-              <li>防災委員会</li>
-              <li>季節イベント</li>
-            </ul>
-          </div>
-          {/* プレミアムサービス */}
-          <div>
-            <div className="font-bold text-[18px] text-[#bfa15a] mb-2">サービス</div>
-            <ul className="text-[15px] text-gray-700 font-light space-y-1">
-              <li>地域情報</li>
-              <li>お問合せ</li>
-              <li>FAQ</li>
-            </ul>
+        {/* サブリンク（最小限） */}
+        <div className="px-6 sm:px-8 pb-6">
+          <div className="flex flex-wrap gap-x-6 gap-y-2 text-[14px] text-[#7b7361]">
+            {SECONDARY_ITEMS.map(s => (
+              <Link key={s.path} href={s.path} className="hover:underline hover:text-[#bfa15a] transition" onClick={onClose}>
+                {s.label}
+              </Link>
+            ))}
           </div>
         </div>
       </div>
