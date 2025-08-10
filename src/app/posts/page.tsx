@@ -164,7 +164,6 @@ export default function PostsPage() {
             ニュース
           </h2>
           <p className="mt-1 text-sm md:text-[0.95rem] text-[#49608a]">
-            TheParkhousuKamishakujiiResidenceOfficialSite
           </p>
         </section>
 
