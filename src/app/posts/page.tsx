@@ -1,9 +1,10 @@
 // src/app/posts/page.tsx
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, startTransition } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import {
   collection,
   query,
@@ -17,10 +18,11 @@ import {
 } from "firebase/firestore";
 import { db } from "@/firebase";
 
-import StickyHeader from "@/components/StickyHeader";
-import SearchModal from "@/components/ActionsModal";
-import CategorySidebar from "@/components/CategorySidebar";
-import CategorySwiper from "@/components/CategorySwiper";
+// ↓ “表示直後に不要”なUIは分割して遅延ロード
+const StickyHeader = dynamic(() => import("@/components/StickyHeader"), { ssr: false });
+const SearchModal  = dynamic(() => import("@/components/ActionsModal"), { ssr: false });
+const CategorySidebar = dynamic(() => import("@/components/CategorySidebar"), { ssr: false });
+const CategorySwiper  = dynamic(() => import("@/components/CategorySwiper"), { ssr: false });
 
 const CATEGORY_LIST = ["理事会", "検討委員会", "管理組合", "管理室", "地域情報", "暮らしと防災"];
 
@@ -29,17 +31,18 @@ type Post = {
   id: string;
   title: string;
   createdAt: CreatedAt;
-  richtext: string;        // ※ Firestoreから来るが、リストでは中身は使わない
+  richtext: string;
   image?: string;
   tags?: string[];
   category?: string[];
   highlight?: boolean;
   slug?: string;
-  thumb: string;           // ← サムネは最初のmap時に確定して以降は計算しない
+  thumb: string;
 };
 
 const PAGE_SIZE = 20;
 const FALLBACK_IMG = "/phoc.png";
+const POSTS_CACHE_KEY = "phoc_posts_v1";
 
 const formatDate = (v: CreatedAt) => {
   const d =
@@ -71,7 +74,21 @@ export default function PostsPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 初回 + 追加読み込み用の共通fetch
+  // ---- キャッシュ即時復元（2回目以降はほぼ瞬時表示） ----
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(POSTS_CACHE_KEY);
+      if (raw) {
+        const cached = JSON.parse(raw) as { posts: Post[] };
+        if (Array.isArray(cached.posts) && cached.posts.length) {
+          setPosts(cached.posts);
+          setLoading(false); // まずはキャッシュで即表示
+        }
+      }
+    } catch {}
+  }, []);
+
+  // ---- Firestoreから取得（初回 or キャッシュのバックグラウンド更新）----
   const fetchPage = async (after?: QueryDocumentSnapshot<DocumentData> | null) => {
     const base = [
       where("status", "==", "published"),
@@ -79,21 +96,24 @@ export default function PostsPage() {
       limit(PAGE_SIZE),
     ] as const;
 
-    const q = after
+    const qy = after
       ? query(collection(db, "posts"), ...base, startAfter(after))
       : query(collection(db, "posts"), ...base);
 
-    const snap = await getDocs(q);
+    const snap = await getDocs(qy);
 
-    // 受け取った時点でthumbを確定（レンダ時に毎回正規表現しない）
     const mapped = snap.docs.map((doc) => {
-      const data = doc.data();
+      const data = doc.data() as any;
       const richtext =
         typeof data.richtext === "string"
           ? data.richtext
           : typeof data.content === "string"
           ? data.content
           : "";
+      const thumb =
+        typeof data.image === "string" && data.image
+          ? data.image
+          : extractThumb(richtext, FALLBACK_IMG);
 
       return {
         id: doc.id,
@@ -101,40 +121,41 @@ export default function PostsPage() {
         createdAt: data.createdAt ?? "",
         richtext,
         image: typeof data.image === "string" ? data.image : undefined,
-        tags: Array.isArray(data.tags)
-          ? data.tags.filter((t: unknown) => typeof t === "string")
-          : [],
+        tags: Array.isArray(data.tags) ? data.tags.filter((t: unknown) => typeof t === "string") : [],
         category: Array.isArray(data.category) ? data.category : [data.category].filter(Boolean),
         highlight: !!data.highlight,
         slug: typeof data.slug === "string" ? data.slug : "",
-        thumb:
-          typeof data.image === "string" && data.image
-            ? data.image
-            : extractThumb(richtext, FALLBACK_IMG),
+        thumb,
       } as Post;
     });
 
-    // 重複除去（id基準）+ からっぽ本文は除外
-    setPosts((prev) => {
-      const byId = new Map<string, Post>();
-      [...prev, ...mapped].forEach((p) => byId.set(p.id, p));
-      return Array.from(byId.values()).filter(
-        (p) => (p.richtext || "").replace(/<[^>]*>/g, "").trim().length > 0
-      );
+    startTransition(() => {
+      setPosts((prev) => {
+        const byId = new Map<string, Post>();
+        [...prev, ...mapped].forEach((p) => byId.set(p.id, p));
+        const deduped = Array.from(byId.values()).filter(
+          (p) => (p.richtext || "").replace(/<[^>]*>/g, "").trim().length > 0
+        );
+        // キャッシュ更新
+        try {
+          sessionStorage.setItem(POSTS_CACHE_KEY, JSON.stringify({ posts: deduped }));
+        } catch {}
+        return deduped;
+      });
+
+      setCursor(snap.docs[snap.docs.length - 1] ?? null);
+      setHasMore(snap.size === PAGE_SIZE);
     });
 
-    // 次ページ判定とカーソル更新
-    setCursor(snap.docs[snap.docs.length - 1] ?? null);
-    setHasMore(snap.size === PAGE_SIZE);
     return snap.size;
   };
 
-  // 初回ロード
   useEffect(() => {
     (async () => {
       try {
-        setLoading(true);
         setError(null);
+        // キャッシュで既に画面が出ているなら“静かに”取得、無いならローディング表示
+        if (posts.length === 0) setLoading(true);
         await fetchPage(null);
       } catch (e) {
         console.error(e);
@@ -146,13 +167,9 @@ export default function PostsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ハイライト：先頭1件だけをヒーロー化（※ 一覧と重複させない）
   const heroPost = useMemo(() => posts.find((p) => p.highlight) || null, [posts]);
-
-  // 一覧は非ハイライトのみ
   const listSource = useMemo(() => posts.filter((p) => !p.highlight), [posts]);
 
-  // 検索・カテゴリ
   const filtered = useMemo(() => {
     const t = searchTerm.toLowerCase();
     return listSource.filter((p) => {
@@ -173,7 +190,7 @@ export default function PostsPage() {
       />
 
       <main
-        id="main" // ← Skip Link対応
+        id="main"
         className="max-w-[1080px] mx-auto px-4 md:px-6 lg:px-8 pt-14 pb-20 bg-white"
         style={{
           fontFamily:
@@ -189,8 +206,13 @@ export default function PostsPage() {
           <div className="h-px bg-[#ecd98b33] mt-4" />
         </header>
 
+        {/* ローディング時はスケルトン（LCP安定） */}
         {loading && (
-          <div className="text-center text-[#6b778c] py-16">記事を読み込んでいます…</div>
+          <div className="animate-pulse space-y-6">
+            <div className="h-40 rounded-xl bg-gray-100" />
+            <div className="h-24 rounded-lg bg-gray-100" />
+            <div className="h-24 rounded-lg bg-gray-100" />
+          </div>
         )}
 
         {error && (
@@ -235,7 +257,7 @@ export default function PostsPage() {
                       src={heroPost.thumb}
                       alt={heroPost.title}
                       fill
-                      loading="lazy"
+                      priority // ヒーローだけ優先読込でLCPを取りにいく
                       className="object-cover"
                       sizes="(max-width:768px) 100vw, 420px"
                     />
