@@ -1,7 +1,6 @@
 "use client";
 import React, { useState } from "react";
 import { Parallax } from "react-scroll-parallax";
-import TabSwiperBar from "@/components/TabSwiperBar";
 
 // ブランド用Serif（Google Fonts推奨）
 const brandFont = '"Playfair Display", "Noto Serif JP", serif';
@@ -133,7 +132,7 @@ export default function Header() {
 
         {/* タブバー */}
         <div>
-          <TabSwiperBar />
+          
         </div>
       </div>
 
