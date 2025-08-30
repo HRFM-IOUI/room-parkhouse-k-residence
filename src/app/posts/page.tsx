@@ -41,9 +41,6 @@ type Post = {
 const PAGE_SIZE = 20;
 const FALLBACK_IMG = "/phoc.png";
 
-const toMs = (v: CreatedAt) =>
-  typeof v === "object" && v?.seconds ? v.seconds * 1000 : Number(new Date(v as any));
-
 const formatDate = (v: CreatedAt) => {
   const d =
     typeof v === "object" && (v as any)?.seconds
@@ -110,9 +107,10 @@ export default function PostsPage() {
         category: Array.isArray(data.category) ? data.category : [data.category].filter(Boolean),
         highlight: !!data.highlight,
         slug: typeof data.slug === "string" ? data.slug : "",
-        thumb: typeof data.image === "string" && data.image
-          ? data.image
-          : extractThumb(richtext, FALLBACK_IMG),
+        thumb:
+          typeof data.image === "string" && data.image
+            ? data.image
+            : extractThumb(richtext, FALLBACK_IMG),
       } as Post;
     });
 
@@ -175,6 +173,7 @@ export default function PostsPage() {
       />
 
       <main
+        id="main" // ← Skip Link対応
         className="max-w-[1080px] mx-auto px-4 md:px-6 lg:px-8 pt-14 pb-20 bg-white"
         style={{
           fontFamily:
@@ -184,10 +183,10 @@ export default function PostsPage() {
       >
         {/* 見出し */}
         <header className="mb-8">
-          <h1 className="text-[2rem] md:text-[2.2rem] font-extrabold text-[#1f2e52] tracking-tight">
+          <h1 className="text-[2rem] md:text-[2.2rem] font-extrabold text-[#1b1b1b] tracking-tight">
             ニュース
           </h1>
-          <div className="h-px bg-[#e6ebf2] mt-4" />
+          <div className="h-px bg-[#ecd98b33] mt-4" />
         </header>
 
         {loading && (
@@ -246,7 +245,7 @@ export default function PostsPage() {
                       {(heroPost.category || []).map((c) => (
                         <span
                           key={c}
-                          className="px-2 py-0.5 text-[11px] font-bold rounded-full border border-[#e1e7f1] text-[#39507d] bg-[#f7f9fc]"
+                          className="px-2 py-0.5 text-[11px] font-bold rounded-full border border-[#e8e2c6] text-[#3d3300] bg-white/70"
                         >
                           {c}
                         </span>
@@ -255,7 +254,9 @@ export default function PostsPage() {
                     <h3 className="text-xl md:text-[1.45rem] font-extrabold text-[#162341] leading-snug group-hover:underline">
                       {heroPost.title}
                     </h3>
-                    <div className="mt-3 text-sm text-[#6b778c]">発行日：{formatDate(heroPost.createdAt)}</div>
+                    <div className="mt-3 text-sm text-[#6b778c]">
+                      発行日：{formatDate(heroPost.createdAt)}
+                    </div>
                   </div>
                 </Link>
               )}
@@ -263,7 +264,9 @@ export default function PostsPage() {
               {/* リスト */}
               <div className="space-y-4">
                 {filtered.length === 0 && (
-                  <div className="text-center text-[#6b778c] py-12">該当する記事は見つかりませんでした。</div>
+                  <div className="text-center text-[#6b778c] py-12">
+                    該当する記事は見つかりませんでした。
+                  </div>
                 )}
                 {filtered.map((p) => (
                   <Link
@@ -286,7 +289,7 @@ export default function PostsPage() {
                         {(p.category || []).map((c) => (
                           <span
                             key={c}
-                            className="px-2 py-[2px] text-[10px] font-bold rounded border border-[#e6ebf2] text-[#3c4f77] bg-[#f9fbfe]"
+                            className="px-2 py-[2px] text-[10px] font-bold rounded border border-[#e8e2c6] text-[#3d3300] bg-white/70"
                           >
                             {c}
                           </span>
@@ -295,7 +298,9 @@ export default function PostsPage() {
                       <h4 className="text-[1.05rem] md:text-[1.12rem] font-bold text-[#18294d] leading-snug group-hover:underline">
                         {p.title}
                       </h4>
-                      <div className="mt-1 text-[12px] text-[#7a8699]">{formatDate(p.createdAt)}</div>
+                      <div className="mt-1 text-[12px] text-[#7a8699]">
+                        {formatDate(p.createdAt)}
+                      </div>
                     </div>
                   </Link>
                 ))}
