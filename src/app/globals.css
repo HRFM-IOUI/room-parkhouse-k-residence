@@ -169,3 +169,168 @@ body.theme-light a {
 .animate-gold-pulse {
   animation: goldPulse 2.8s ease-in-out infinite;
 }
+
+/* =========================================================
+   ▼ Tailwind preflight のリスト初期化を上書き（エディタ/本文）
+   - 箇条書き / 番号リストを復活
+   - TaskList（チェックリスト）は除外して二重マーカーを防止
+   - ここは @tailwind base の後に差し込むのが大事
+========================================================= */
+@layer base {
+  /* 基本：TipTap編集領域と記事本文 */
+  .tiptap, .ProseMirror, .article-content {
+    font-family: var(--font-sans);
+    color: var(--foreground);
+    line-height: 1.75;
+    word-break: break-word;
+  }
+
+  /* --- 通常の箇条書き/番号リスト（TaskList以外） --- */
+  .tiptap ul:not([data-type="taskList"]),
+  .ProseMirror ul:not([data-type="taskList"]),
+  .article-content ul:not([data-type="taskList"]) {
+    list-style: disc;
+    padding-left: 1.4em;
+    margin: 1.1em 0 1.1em 1.0em;
+    list-style-position: outside;
+  }
+  .tiptap ol:not([data-type="taskList"]),
+  .ProseMirror ol:not([data-type="taskList"]),
+  .article-content ol:not([data-type="taskList"]) {
+    list-style: decimal;
+    padding-left: 1.4em;
+    margin: 1.1em 0 1.1em 1.0em;
+    list-style-position: outside;
+  }
+  .tiptap li,
+  .ProseMirror li,
+  .article-content li {
+    margin: .45em 0;
+  }
+  /* ネスト時のマーカー変更（任意の視認性アップ） */
+  .tiptap ul ul,
+  .ProseMirror ul ul,
+  .article-content ul ul { list-style: circle; }
+  .tiptap ol ol,
+  .ProseMirror ol ol,
+  .article-content ol ol { list-style: lower-alpha; }
+
+  /* --- チェックリスト（TaskList）は独自表示：二重マーカー回避 --- */
+  .tiptap ul[data-type="taskList"],
+  .ProseMirror ul[data-type="taskList"],
+  .article-content ul[data-type="taskList"] {
+    list-style: none;
+    padding-left: 0;
+    margin: 1.1em 0;
+  }
+  .tiptap ul[data-type="taskList"] li,
+  .ProseMirror ul[data-type="taskList"] li,
+  .article-content ul[data-type="taskList"] li {
+    display: flex;
+    align-items: flex-start;
+    gap: .6em;
+    margin: .45em 0;
+  }
+  .tiptap ul[data-type="taskList"] li > label,
+  .ProseMirror ul[data-type="taskList"] li > label,
+  .article-content ul[data-type="taskList"] li > label {
+    user-select: none;
+    line-height: 1.4;
+    margin-top: .1em;
+  }
+  .tiptap ul[data-type="taskList"] li > div,
+  .ProseMirror ul[data-type="taskList"] li > div,
+  .article-content ul[data-type="taskList"] li > div {
+    flex: 1 1 auto;
+  }
+  .tiptap ul[data-type="taskList"] input[type="checkbox"],
+  .ProseMirror ul[data-type="taskList"] input[type="checkbox"],
+  .article-content ul[data-type="taskList"] input[type="checkbox"] {
+    transform: translateY(.1em);
+  }
+  .tiptap ul[data-type="taskList"] ul[data-type="taskList"],
+  .ProseMirror ul[data-type="taskList"] ul[data-type="taskList"],
+  .article-content ul[data-type="taskList"] ul[data-type="taskList"] {
+    margin-left: 1.6em;
+  }
+
+  /* --- 引用/コード/画像/埋め込み/表（控えめな既定値：必要に応じて調整） --- */
+  .tiptap blockquote, .ProseMirror blockquote, .article-content blockquote {
+    border-left: 4px solid #3b82f6;
+    background: #f5f7fb;
+    color: #475569;
+    font-style: italic;
+    padding: 1.1em 1.5em;
+    margin: 1.6em 0;
+    border-radius: 8px;
+  }
+  .tiptap pre, .ProseMirror pre, .article-content pre {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    background: #23272e;
+    color: #f3f3f3;
+    border-radius: 6px;
+    padding: 1em;
+    overflow-x: auto;
+    margin: 1.4em 0;
+    font-size: .95rem;
+  }
+  .tiptap code, .ProseMirror code, .article-content code {
+    font-family: inherit;
+    background: #23272e;
+    color: #f3f3f3;
+    border-radius: 4px;
+    padding: 0.15em 0.4em;
+  }
+  .tiptap img, .ProseMirror img, .article-content img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 1.6em auto;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px #0002;
+  }
+  .tiptap video, .ProseMirror video, .article-content video,
+  .tiptap iframe, .ProseMirror iframe, .article-content iframe {
+    max-width: 100%;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16/9;
+    margin: 1.6rem 0;
+    border-radius: 12px;
+    background: #000;
+  }
+  .tiptap table, .ProseMirror table, .article-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.6em 0;
+    font-size: .97em;
+    background: #f8fafd;
+    overflow-x: auto;
+    display: block;
+  }
+  .tiptap th, .ProseMirror th, .article-content th,
+  .tiptap td, .ProseMirror td, .article-content td {
+    border: 1px solid #e2e8f0;
+    padding: 0.7em 1.2em;
+    text-align: left;
+  }
+  .tiptap a, .ProseMirror a, .article-content a {
+    color: var(--color-gold);
+    text-decoration: underline;
+    text-underline-offset: 2.5px;
+    text-decoration-thickness: 1.4px;
+  }
+
+  @media (max-width: 600px) {
+    .tiptap, .ProseMirror, .article-content {
+      line-height: 1.7;
+      padding: 0 2vw;
+    }
+    .tiptap img, .ProseMirror img, .article-content img,
+    .tiptap video, .ProseMirror video, .article-content video,
+    .tiptap iframe, .ProseMirror iframe, .article-content iframe {
+      margin: 1.1em 0;
+      border-radius: 6px;
+    }
+  }
+}

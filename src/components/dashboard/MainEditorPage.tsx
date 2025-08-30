@@ -1,7 +1,10 @@
+// C:\Users\ik391\room-ikejirisensei\src\components\dashboard\MainEditorPage.tsx 
 "use client";
+
 import NextImage from "next/image";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 const TopHistoryBar = dynamic(() => import("@/components/dashboard/TopHistoryBar"), { ssr: false });
 
 import EditorTitleSlug from "@/components/dashboard/EditorTitleSlug";
@@ -33,9 +36,8 @@ import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
 import TextAlign from "@tiptap/extension-text-align";
 import Youtube from "@tiptap/extension-youtube";
+import type { ChainedCommands } from "@tiptap/core";
 
-import { db } from "@/firebase";
-import { doc, updateDoc, addDoc, collection, serverTimestamp } from "firebase/firestore";
 import toast from "react-hot-toast";
 
 type Props = {
@@ -55,13 +57,25 @@ type Props = {
   isEditMode?: boolean;
   highlight?: boolean;
   setHighlight?: (v: boolean) => void;
+
+  /** 親がDB保存を行うハンドラ（公開保存） */
   onSave?: () => Promise<void>;
-  onDraftSave?: () => Promise<void>;
+  /** 親がドラフト保存（または自動保存）を行うハンドラ */
+  // ▼ 変更：呼び出し元に「manual/auto」を伝える
+  onDraftSave?: (opts?: { source?: "manual" | "auto" }) => Promise<void>;
 };
 
 export default function MainEditorPage(props: Props) {
   const [mounted, setMounted] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const router = useRouter();
+
+  // 二重押下ガード（UI側）
+  const [saving, setSaving] = useState(false);
+  const [draftSaving, setDraftSaving] = useState(false);
+
+  // 選択レンジ保持
+  const lastSelRef = useRef<{ from: number; to: number } | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -74,18 +88,35 @@ export default function MainEditorPage(props: Props) {
   const [fontSize, setFontSize] = useState("16px");
   const [fontFamily, setFontFamily] = useState("system-ui, sans-serif");
 
-  // アイキャッチ自動抽出
+  // アイキャッチ自動抽出（YouTubeは img.youtube.com に変換）
+  function youtubeIdFromUrl(url: string) {
+    const m = url.match(/(?:youtube\.com\/(?:embed|watch\?v=)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+    return m?.[1] ?? null;
+  }
   function extractThumbnailFromHTML(html: string): string | null {
-    const imgMatch = html.match(/<img[^>]+src=["']([^"']+)["']/);
+    const imgMatch = html.match(/<img[^>]+src=["']([^"']+)["']/i);
     if (imgMatch) return imgMatch[1];
-    const ytMatch = html.match(/<iframe[^>]+src=["']([^"']+youtube\.com[^"']+)["']/);
-    if (ytMatch) return ytMatch[1];
-    const videoMatch = html.match(/<video[^>]+src=["']([^"']+)["']/);
-    if (videoMatch) return videoMatch[1];
+    const ytMatch = html.match(/<iframe[^>]+src=["']([^"']+youtube\.com[^"']+)["']/i);
+    if (ytMatch) {
+      const id = youtubeIdFromUrl(ytMatch[1]);
+      if (id) return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
+    }
+    const videoMatch = html.match(/<video[^>]+src=["']([^"']+)["']/i);
+    if (videoMatch) return "/video-thumb.jpg";
     return null;
   }
   const firstImage = extractThumbnailFromHTML(props.body) || "";
-  const showEyecatch = props.eyecatch || firstImage || "/phoc.png";
+  const showEyecatch = props.eyecatch || firstImage || "/eyecatch.jpg";
+
+  // 本文同期はデバウンスして負荷軽減
+  const setBodyFn = props.setBody;
+  const setBodyDebounced = useMemo(() => {
+    let t: ReturnType<typeof setTimeout> | null = null;
+    return (html: string) => {
+      if (t) clearTimeout(t);
+      t = setTimeout(() => setBodyFn(html), 150);
+    };
+  }, [setBodyFn]);
 
   // TipTapエディタ
   const editor = useEditor({
@@ -100,8 +131,11 @@ export default function MainEditorPage(props: Props) {
       Link.configure({ openOnClick: false, autolink: false }),
       Image,
       Table.configure({ resizable: true }),
-      TableRow, TableHeader, TableCell,
-      TaskList, TaskItem,
+      TableRow,
+      TableHeader,
+      TableCell,
+      TaskList,
+      TaskItem,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       Youtube,
     ],
@@ -113,15 +147,41 @@ export default function MainEditorPage(props: Props) {
       },
     },
     onUpdate: ({ editor }) => {
-      props.setBody(editor.getHTML());
+      setBodyDebounced(editor.getHTML());
       const attrs = editor.getAttributes("textStyle") || {};
       if (attrs.fontSize) setFontSize(attrs.fontSize);
       if (attrs.fontFamily) setFontFamily(attrs.fontFamily);
+    },
+    onSelectionUpdate: ({ editor }) => {
+      const sel = editor.state.selection;
+      lastSelRef.current = { from: sel.from, to: sel.to };
     },
     autofocus: true,
     editable: true,
     immediatelyRender: false,
   });
+
+  // 外部から body が差し替わった場合（編集モード初期ロード等）に反映
+  useEffect(() => {
+    if (!editor) return;
+    const current = editor.getHTML();
+    if (props.body && props.body !== current) {
+      editor.commands.setContent(props.body, { emitUpdate: false });
+    }
+  }, [editor, props.body]);
+
+  // 選択復元→チェーン実行（型付き）
+  const restoreAndRun = useCallback(
+    (run: (chain: ChainedCommands) => ChainedCommands) => {
+      if (!editor) return;
+      let chain = editor.chain();
+      if (!editor.isFocused) chain = chain.focus();
+      const sel = lastSelRef.current;
+      if (sel && sel.from !== sel.to) chain = chain.setTextSelection(sel);
+      run(chain).run();
+    },
+    [editor]
+  );
 
   // コマンド系
   const handleBold = useCallback(() => editor?.chain().focus().toggleBold().run(), [editor]);
@@ -131,13 +191,30 @@ export default function MainEditorPage(props: Props) {
   const handleHighlight = useCallback(() => editor?.chain().focus().setHighlight().run(), [editor]);
   const handleColorChange = useCallback((color: string) => editor?.chain().focus().setColor(color).run(), [editor]);
   const handleHighlightColorChange = useCallback((color: string) => editor?.chain().focus().setHighlight({ color }).run(), [editor]);
-  const handleFontSizeChange = useCallback((size: string) => { setFontSize(size); editor?.chain().focus().setFontSize(size).run(); }, [editor]);
-  const handleFontFamilyChange = useCallback((family: string) => { setFontFamily(family); editor?.chain().focus().setFontFamily(family).run(); }, [editor]);
+
+  // ★ 選択復元してから適用
+  const handleFontSizeChange = useCallback(
+    (size: string) => {
+      setFontSize(size);
+      restoreAndRun((chain) => chain.setMark("textStyle", { fontSize: size }));
+    },
+    [restoreAndRun]
+  );
+  const handleFontFamilyChange = useCallback(
+    (family: string) => {
+      setFontFamily(family);
+      restoreAndRun((chain) => chain.setMark("textStyle", { fontFamily: family }));
+    },
+    [restoreAndRun]
+  );
+
   const handleImage = useCallback(() => {
-    const url = window.prompt("画像URLを入力:"); if (url) editor?.chain().focus().setImage({ src: url }).run();
+    const url = window.prompt("画像URLを入力:");
+    if (url) editor?.chain().focus().setImage({ src: url }).run();
   }, [editor]);
   const handleYoutube = useCallback(() => {
-    const url = window.prompt("YouTube動画URLを入力:"); if (url) editor?.chain().focus().setYoutubeVideo({ src: url }).run();
+    const url = window.prompt("YouTube動画URLを入力:");
+    if (url) editor?.chain().focus().setYoutubeVideo({ src: url }).run();
   }, [editor]);
   const handleX = useCallback(() => {
     const url = window.prompt("X(Twitter)埋め込みURL（ツイートiframe）を入力:");
@@ -169,7 +246,9 @@ export default function MainEditorPage(props: Props) {
     if (empty) {
       const linkText = window.prompt("リンクとして表示するテキストを入力:");
       if (linkText && selection) {
-        editor?.chain().focus()
+        editor
+          ?.chain()
+          .focus()
           .insertContent(linkText)
           .setTextSelection({ from: selection.from, to: selection.from + linkText.length })
           .setLink({ href: url })
@@ -184,101 +263,104 @@ export default function MainEditorPage(props: Props) {
     const prevUrl = editor?.getAttributes("link").href || "";
     const url = window.prompt("リンクURLを編集", prevUrl);
     if (url === null) return;
-    if (url === "") { editor?.chain().focus().unsetLink().run(); }
-    else { editor?.chain().focus().setLink({ href: url }).run(); }
+    if (url === "") editor?.chain().focus().unsetLink().run();
+    else editor?.chain().focus().setLink({ href: url }).run();
   }, [editor]);
   const onUndo = useCallback(() => editor?.chain().focus().undo().run(), [editor]);
   const onRedo = useCallback(() => editor?.chain().focus().redo().run(), [editor]);
 
-  // 投稿・下書き
+  /** ====== 保存系（親に委譲） ====== */
+  const validate = useCallback(() => {
+    if (!props.title.trim()) {
+      toast.error("タイトル必須！");
+      return false;
+    }
+    if (!props.body || props.body === "<p></p>") {
+      toast.error("本文空です！");
+      return false;
+    }
+    if (props.slug && !/^[a-zA-Z0-9_-]+$/.test(props.slug)) {
+      toast.error("スラッグ不正");
+      return false;
+    }
+    return true;
+  }, [props.title, props.body, props.slug]);
+
   const handleSave = useCallback(async () => {
-    if (!props.title.trim()) return toast.error("タイトル必須！");
-    if (!props.body || props.body === "<p></p>") return toast.error("本文空です！");
-    if (props.slug && !/^[a-zA-Z0-9_-]+$/.test(props.slug)) return toast.error("スラッグ不正");
+    const onSave = props.onSave; // ★ ローカル退避でnarrowing維持
+    if (!onSave) {
+      toast.error("保存ハンドラが未接続です（onSave）");
+      return;
+    }
+    if (saving) return;
+    if (!validate()) return;
+
+    setSaving(true);
     try {
-      if (props.isEditMode && props.postId) {
-        await updateDoc(doc(db, "posts", props.postId), {
-          title: props.title.trim(),
-          richtext: props.body,
-          tags: props.tags ?? [],
-          category: props.category,
-          highlight: !!props.highlight,
-          eyecatch: showEyecatch,
-          slug: props.slug,
-          updatedAt: new Date(),
-        });
-        toast.success("記事を更新しました");
-      } else {
-        await addDoc(collection(db, "posts"), {
-          title: props.title.trim(),
-          richtext: props.body,
-          tags: props.tags ?? [],
-          category: props.category,
-          highlight: !!props.highlight,
-          eyecatch: showEyecatch,
-          slug: props.slug,
-          createdAt: serverTimestamp(),
-          status: "published",
-        });
-        toast.success("投稿しました！");
-      }
-      if (props.onSave) await props.onSave();
+      await onSave();
     } catch (e) {
       toast.error("保存エラー: " + (e instanceof Error ? e.message : String(e)));
+    } finally {
+      setSaving(false);
     }
-  }, [props, showEyecatch]);
+  }, [props.onSave, saving, validate]);
 
   const handleSaveDraft = useCallback(async () => {
+    const onDraftSave = props.onDraftSave; // ★ ローカル退避でnarrowing維持
+    if (!onDraftSave) {
+      toast("下書き保存：ハンドラ未接続", { icon: "ℹ️" });
+      return;
+    }
+    if (draftSaving) return;
+
+    setDraftSaving(true);
     try {
-      if (props.isEditMode && props.postId) {
-        await updateDoc(doc(db, "posts", props.postId), {
-          title: props.title.trim(),
-          richtext: props.body,
-          tags: props.tags ?? [],
-          category: props.category,
-          highlight: !!props.highlight,
-          eyecatch: showEyecatch,
-          slug: props.slug,
-          updatedAt: new Date(),
-          status: "draft",
-        });
-        toast.success("下書き保存（更新）OK");
-      } else {
-        await addDoc(collection(db, "posts"), {
-          title: props.title.trim(),
-          richtext: props.body,
-          tags: props.tags ?? [],
-          category: props.category,
-          highlight: !!props.highlight,
-          eyecatch: showEyecatch,
-          slug: props.slug,
-          createdAt: serverTimestamp(),
-          status: "draft",
-        });
-        toast.success("下書き保存しました！");
-      }
-      if (props.onDraftSave) await props.onDraftSave();
+      // ★ 手動保存は manual として親に通知
+      await onDraftSave({ source: "manual" });
+      // 成功トーストは親側で表示（manual のときだけ）
     } catch (e) {
       toast.error("下書きエラー: " + (e instanceof Error ? e.message : String(e)));
+    } finally {
+      setDraftSaving(false);
     }
-  }, [props, showEyecatch]);
+  }, [props.onDraftSave, draftSaving]);
 
-  // メディア・戻る
-  const handleMediaLibrary = useCallback(() => {
-    window.location.href = "/dashboard/media";
-  }, []);
-  const handleBack = useCallback(() => {
-    window.location.href = "/dashboard";
-  }, []);
+  /** ====== AutoSave（onDraftSave が渡されたときだけ 5秒無操作で実行） ====== */
+  const [dirty, setDirty] = useState(false);
+  useEffect(() => {
+    setDirty(true);
+  }, [props.title, props.body, props.tags, props.category, props.slug, props.highlight]);
 
-  // ABXYPad
+  useEffect(() => {
+    const draftSave = props.onDraftSave; // ★ ローカルに退避（TS2722回避）
+    if (!draftSave) return;
+    if (!dirty) return;
+
+    const t = setTimeout(async () => {
+      try {
+        // ★ オートセーブは auto として親に通知（親側で "Autosave" 表示に切り替え可能）
+        await draftSave({ source: "auto" });
+      } catch {
+        /* サイレント */
+      } finally {
+        setDirty(false); // 連続発火を抑制
+      }
+    }, 5000); // 5秒無操作で保存
+
+    return () => clearTimeout(t);
+  }, [dirty, props.onDraftSave]);
+
+  // メディア・戻る（フルリロードを避ける）
+  const handleMediaLibrary = useCallback(() => { router.push("/dashboard/media"); }, [router]);
+  const handleBack = useCallback(() => { router.push("/dashboard"); }, [router]);
+
   const handleOpenDrawerA = useCallback(() => setOpenDrawer("A"), []);
   const handleOpenDrawerB = useCallback(() => setOpenDrawer("B"), []);
   const handleOpenDrawerX = useCallback(() => setOpenDrawer("X"), []);
   const handleOpenDrawerY = useCallback(() => setOpenDrawer("Y"), []);
-  const handleStartMenu = useCallback(() => setStartMenuOpen(true), []);
+  const handleStartMenu  = useCallback(() => setStartMenuOpen(true), []);
 
-  // 初回レンダ時は何も描画しない（hydration mismatch防止！）
+  // 初回レンダ時は何も描画しない（hydration mismatch防止）
   if (!mounted) return null;
 
   return (
@@ -294,12 +376,7 @@ export default function MainEditorPage(props: Props) {
         setTags={props.setTags}
       />
 
-      <EditorTitleSlug
-        title={props.title}
-        setTitle={props.setTitle}
-        slug={props.slug}
-        setSlug={props.setSlug}
-      />
+      <EditorTitleSlug title={props.title} setTitle={props.setTitle} slug={props.slug} setSlug={props.setSlug} />
 
       <div className="w-full flex flex-col items-center relative">
         {/* PC用四隅ABXYコンポーネント */}
@@ -340,43 +417,43 @@ export default function MainEditorPage(props: Props) {
             <b>プレビュー</b>
             <div dangerouslySetInnerHTML={{ __html: props.body }} />
           </div>
-        ) : (
-          editor ? (
-            <div className="w-full max-w-2xl min-h-[350px] sm:min-h-[500px] rounded-xl bg-white shadow-lg p-4 sm:p-6 flex">
-              <EditorContent className="w-full tiptap ProseMirror min-h-[320px] sm:min-h-[460px] focus:outline-none text-gray-900" editor={editor} />
-            </div>
-          ) : null
-        )}
+        ) : editor ? (
+          <div className="w-full max-w-2xl min-h-[350px] sm:min-h-[500px] rounded-xl bg-white shadow-lg p-4 sm:p-6 flex">
+            <EditorContent
+              className="w-full tiptap ProseMirror min-h-[320px] sm:min-h-[460px] focus:outline-none text-gray-900"
+              editor={editor}
+            />
+          </div>
+        ) : null}
       </div>
 
       {/* アイキャッチ自動プレビュー */}
-<div className="my-4">
-  <div className="text-xs text-gray-600 mb-1">サムネイル自動プレビュー</div>
-  <NextImage
-    src={showEyecatch}
-    alt="eyecatch"
-    width={170}
-    height={110}
-    className="max-w-[170px] max-h-[110px] rounded-lg shadow"
-    style={{ objectFit: "cover" }}
-    unoptimized // ←CDN乗らないローカルもOK、必要なら付けて
-  />
-  {!isMobile && (
-    <div className="flex justify-center mt-2">
-      <StartButton
-        onClick={handleStartMenu}
-        style={{
-          position: "static",
-          left: "auto",
-          bottom: "auto",
-          transform: "none",
-          zIndex: "auto",
-        }}
-      />
-    </div>
-  )}
-</div>
-
+      <div className="my-4">
+        <div className="text-xs text-gray-600 mb-1">サムネイル自動プレビュー</div>
+        <NextImage
+          src={showEyecatch}
+          alt="eyecatch"
+          width={170}
+          height={110}
+          className="max-w-[170px] max-h-[110px] rounded-lg shadow"
+          style={{ objectFit: "cover" }}
+          unoptimized
+        />
+        {!isMobile && (
+          <div className="flex justify-center mt-2">
+            <StartButton
+              onClick={handleStartMenu}
+              style={{
+                position: "static",
+                left: "auto",
+                bottom: "auto",
+                transform: "none",
+                zIndex: "auto",
+              }}
+            />
+          </div>
+        )}
+      </div>
 
       {/* スマホ用ABXYPad・Drawer */}
       {isMobile && (
@@ -388,10 +465,7 @@ export default function MainEditorPage(props: Props) {
             onY={handleOpenDrawerY}
             onStart={handleStartMenu}
           />
-          <ABXYDrawerModal
-            openType={openDrawer}
-            onClose={() => setOpenDrawer(null)}
-          >
+          <ABXYDrawerModal openType={openDrawer} onClose={() => setOpenDrawer(null)}>
             {openDrawer === "A" && (
               <TextStyleDrawer
                 onBold={handleBold}
@@ -440,12 +514,12 @@ export default function MainEditorPage(props: Props) {
         </>
       )}
 
-      {/* モーダル：STARTメニュー */}
+      {/* モーダル：STARTメニュー（親に完全委譲） */}
       <StartMenuModal
         open={startMenuOpen}
         onClose={() => setStartMenuOpen(false)}
-        onSave={handleSaveDraft}
-        onPost={handleSave}
+        onSave={handleSaveDraft}  // ← 親 onDraftSave に委譲（manual）
+        onPost={handleSave}       // ← 親 onSave に委譲
         onMedia={handleMediaLibrary}
         onBack={handleBack}
       />
@@ -476,24 +550,32 @@ export default function MainEditorPage(props: Props) {
           margin-bottom: 10px;
         }
         @media (max-width: 800px) {
-          .abxy-corner, { display: none; }
+          .abxy-corner { display: none; }
         }
         .tiptap, .ProseMirror {
           min-height: 320px;
           height: auto;
           overflow: visible;
+          color: #111827; /* 強制黒文字 */
         }
         .tiptap:focus, .ProseMirror:focus {
           outline: 2px solid #3b82f6;
           box-shadow: 0 0 0 3px #3b82f631;
         }
-        .tiptap, .ProseMirror {
-  min-height: 320px;
-  height: auto;
-  overflow: visible;
-  color: #111827; /* Tailwindのgray-900 相当。強制的に黒文字に固定 */
-}  
       `}</style>
+
+      {/* 保存中オーバーレイ（任意） */}
+      {(saving || draftSaving) && (
+        <div
+          aria-hidden
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(255,255,255,0.35)",
+            pointerEvents: "none",
+          }}
+        />
+      )}
     </main>
   );
 }
