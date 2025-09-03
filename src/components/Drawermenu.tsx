@@ -38,6 +38,7 @@ const PRIMARY_ITEMS: MenuItem[] = [
   { label: "NEWS一覧", path: "/posts", desc: "最新のお知らせ" },
   { label: "居住者ページ", path: "/residents", desc: "パスコード/各種手続き" },
   { label: "資料 / アーカイブ", path: "/archive", desc: "議事録・配布資料" },
+  { label: "実務ツール（委員会）", path: "/legal-ai/login", desc: "AI法務エージェント(近日公開)" },
 ];
 
 const SECONDARY_ITEMS: MenuItem[] = [
@@ -79,6 +80,7 @@ const STATIC_PAGES: { title: string; path: string; keywords?: string[] }[] = [
   { title: "資料 / アーカイブ", path: "/archive", keywords: ["議事録", "配布資料", "管理組合"] },
   { title: "プライバシーポリシー", path: "/privacy" },
   { title: "お問い合わせ", path: "/contact" },
+  { title: "実務ツール（委員会）", path: "/legal-ai/login", keywords: ["AI法務", "法務AI", "委員会専用"] },
 ];
 
 export default function Drawermenu({ open, onClose }: Props) {
