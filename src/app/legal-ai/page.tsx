@@ -6,11 +6,12 @@ import { useRouter } from "next/navigation";
 import "@/firebase";
 import {
   collection,
-  getDocs,
-  orderBy,
-  query as fsQuery,
   doc,
   getDoc,
+  onSnapshot,
+  orderBy,
+  query as fsQuery,
+  Unsubscribe,
 } from "firebase/firestore";
 import { db } from "@/firebase";
 import { getFunctions, httpsCallable } from "firebase/functions";
@@ -63,6 +64,7 @@ export default function LegalAiPage() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | undefined>();
   const [confirmOpen, setConfirmOpen] = useState(false);
+
   const ym = useMemo(() => new Date().toISOString().slice(0, 7), []);
 
   // gate
@@ -71,39 +73,58 @@ export default function LegalAiPage() {
     if (!token) router.replace("/legal-ai/login");
   }, [router]);
 
-  // usage
+  // usage: リアルタイム購読
   useEffect(() => {
-    (async () => {
-      try {
-        const snap = await getDoc(doc(db, "legal_ai_usage", ym));
-        const data: any = snap.exists() ? snap.data() : { limit: 5, count: 0 };
-        setLimit(Number(data.limit ?? 5));
-        setUsed(Number(data.count ?? 0));
-      } catch {}
-    })();
+    const ref = doc(db, "legal_ai_usage", ym);
+    let unsub: Unsubscribe | undefined;
+
+    try {
+      unsub = onSnapshot(
+        ref,
+        (snap) => {
+          const data: any = snap.exists() ? snap.data() : { limit: 5, count: 0 };
+          setLimit(Number(data.limit ?? 5));
+          setUsed(Number(data.count ?? 0));
+        },
+        () => {
+          // 権限/App Check等で失敗してもUIは黙って続行
+        }
+      );
+    } catch {
+      /* noop */
+    }
+    return () => unsub && unsub();
   }, [ym]);
 
-  // monthly entries
-  async function loadEntries() {
-    const colRef = collection(db, "legal_ai_reports", ym, "entries");
-    const q = fsQuery(colRef, orderBy("at", "desc"));
-    const snap = await getDocs(q);
-    const rows: Entry[] = snap.docs.map((d) => {
-      const x: any = d.data();
-      return {
-        id: d.id,
-        q: String(x.q || ""),
-        a: String(x.a || ""),
-        at:
-          typeof x.at === "number"
-            ? x.at
-            : x.at?.toMillis?.() ?? Date.now(),
-      };
-    });
-    setItems(rows);
-  }
+  // entries: リアルタイム購読
   useEffect(() => {
-    loadEntries();
+    const colRef = collection(db, "legal_ai_reports", ym, "entries");
+    const qy = fsQuery(colRef, orderBy("at", "desc"));
+
+    let unsub: Unsubscribe | undefined;
+    try {
+      unsub = onSnapshot(
+        qy,
+        (snap) => {
+          const rows: Entry[] = snap.docs.map((d) => {
+            const x: any = d.data();
+            return {
+              id: d.id,
+              q: String(x.q || ""),
+              a: String(x.a || ""),
+              at: typeof x.at === "number" ? x.at : x.at?.toMillis?.() ?? Date.now(),
+            };
+          });
+          setItems(rows);
+        },
+        () => {
+          // 読み取り不可などは無視（回答表示自体には影響しない）
+        }
+      );
+    } catch {
+      /* noop */
+    }
+    return () => unsub && unsub();
   }, [ym]);
 
   const openConfirm = () => {
@@ -124,26 +145,20 @@ export default function LegalAiPage() {
       await httpsCallable(funcs, "consumeLegalUsage")({});
 
       // 2) 回答生成
-      const res: any = await httpsCallable(funcs, "askLegal")({
-        question: q,
-      });
+      const res: any = await httpsCallable(funcs, "askLegal")({ question: q });
       const answer = String(res?.data?.answer || "");
       setA(answer);
 
-      // 3) 当月レポートへ保存
-      await httpsCallable(funcs, "saveLegalEntry")({
-        question: q,
-        answer,
-      });
+      // 3) 当月レポートへ保存（Functions）
+      await httpsCallable(funcs, "saveLegalEntry")({ question: q, answer });
 
-      // 4) 使用状況/一覧更新
-      const us = await getDoc(doc(db, "legal_ai_usage", ym));
-      const udata: any = us.exists() ? us.data() : { limit: 5, count: 0 };
-      setLimit(Number(udata.limit ?? 5));
-      setUsed(Number(udata.count ?? 0));
-      await loadEntries();
+      // 以降はリアルタイム購読が自動反映
     } catch (e: any) {
-      setErr(e?.message || "送信に失敗しました");
+      const msg = String(e?.message || "");
+      // 権限などの非致命は黙って流す
+      if (!/Missing or insufficient permissions|PERMISSION_DENIED/i.test(msg)) {
+        setErr(msg || "送信に失敗しました");
+      }
     } finally {
       setLoading(false);
     }
@@ -158,7 +173,6 @@ export default function LegalAiPage() {
 
   // PDF 生成（保存済み items が無ければ直近の q/a を対象にするフォールバック）
   const makePdf = async () => {
-    // 出力対象データ決定
     const dataset =
       items.length > 0
         ? items
@@ -176,7 +190,7 @@ export default function LegalAiPage() {
     wrap.style.position = "fixed";
     wrap.style.left = "-10000px";
     wrap.style.top = "0";
-    wrap.style.width = "794px"; // A4相当幅（px）
+    wrap.style.width = "794px"; // A4幅相当
     wrap.style.padding = "24px";
     wrap.style.background = "#ffffff";
     wrap.innerHTML = `
@@ -190,17 +204,11 @@ export default function LegalAiPage() {
             const no = dataset.length - idx;
             return `
               <div style="border:1px solid #e5d9b5;border-radius:12px;padding:16px;margin-bottom:12px;">
-                <div style="font-size:11px;color:#666;margin-bottom:6px">#${no} ・ ${escapeHtml(
-                  fmt(it.at)
-                )}</div>
+                <div style="font-size:11px;color:#666;margin-bottom:6px">#${no} ・ ${escapeHtml(fmt(it.at))}</div>
                 <div style="font-weight:700;margin-bottom:6px;color:#7f6b39">■ 質問</div>
-                <pre style="white-space:pre-wrap;font-size:12px;margin:0 0 10px">${escapeHtml(
-                  it.q
-                )}</pre>
+                <pre style="white-space:pre-wrap;font-size:12px;margin:0 0 10px">${escapeHtml(it.q)}</pre>
                 <div style="font-weight:700;margin-bottom:6px;color:#7f6b39">■ 回答</div>
-                <pre style="white-space:pre-wrap;font-size:12px;margin:0">${escapeHtml(
-                  it.a
-                )}</pre>
+                <pre style="white-space:pre-wrap;font-size:12px;margin:0">${escapeHtml(it.a)}</pre>
               </div>
             `;
           })
@@ -266,16 +274,10 @@ export default function LegalAiPage() {
           style={{ borderColor: COL.border }}
         >
           <div>
-            <h1
-              className="text-[18px] sm:text-[20px] font-bold"
-              style={{ color: COL.textMain }}
-            >
+            <h1 className="text-[18px] sm:text-[20px] font-bold" style={{ color: COL.textMain }}>
               法務AI：LEX-K（委員会専用）
             </h1>
-            <p
-              className="text-[12px] sm:text-[13px]"
-              style={{ color: COL.subText }}
-            >
+            <p className="text-[12px] sm:text-[13px]" style={{ color: COL.subText }}>
               建築基準法・宅建業法・都市計画法・東京都条例を参照。最終判断は弁護士確認。
             </p>
           </div>
@@ -287,11 +289,7 @@ export default function LegalAiPage() {
               type="button"
               onClick={makePdf}
               className="px-3 py-1.5 rounded border font-bold"
-              style={{
-                borderColor: "#e8dab3",
-                color: COL.textMain,
-                background: "#fff7d7",
-              }}
+              style={{ borderColor: "#e8dab3", color: COL.textMain, background: "#fff7d7" }}
               aria-label="当月の記録をPDF保存"
               title="当月の記録をPDF保存"
             >
@@ -301,15 +299,9 @@ export default function LegalAiPage() {
         </header>
 
         {/* フォーム */}
-        <section
-          className="mt-6 rounded-3xl border bg-white/95 p-5 sm:p-7"
-          style={{ borderColor: COL.border }}
-        >
+        <section className="mt-6 rounded-3xl border bg-white/95 p-5 sm:p-7" style={{ borderColor: COL.border }}>
           <div className="flex items-center justify-between">
-            <label
-              className="text-[14px] font-bold"
-              style={{ color: COL.textMain }}
-            >
+            <label className="text-[14px] font-bold" style={{ color: COL.textMain }}>
               質問（1回＝1送信）
             </label>
             <button
@@ -333,11 +325,7 @@ export default function LegalAiPage() {
 
           <div
             className="mt-3 text-[12px] px-3 py-2 rounded-lg border"
-            style={{
-              color: COL.subText,
-              borderColor: "#efe6cf",
-              background: "#fffdf6",
-            }}
+            style={{ color: COL.subText, borderColor: "#efe6cf", background: "#fffdf6" }}
           >
             送信前に内容をご確認ください。送信すると今月の利用回数を<strong>1回消費</strong>します。
           </div>
@@ -345,11 +333,7 @@ export default function LegalAiPage() {
           {err && (
             <div
               className="mt-3 text-[13px] px-3 py-2 rounded-lg border"
-              style={{
-                color: "#9b2c2c",
-                borderColor: "#f2d6d5",
-                background: "#fff5f5",
-              }}
+              style={{ color: "#9b2c2c", borderColor: "#f2d6d5", background: "#fff5f5" }}
               role="alert"
             >
               {err}
@@ -361,11 +345,7 @@ export default function LegalAiPage() {
               type="button"
               onClick={() => router.push("/legal-ai/login")}
               className="rounded-full px-4 py-2 border"
-              style={{
-                borderColor: "#dfc68e",
-                color: COL.textMain,
-                background: "#ffffff",
-              }}
+              style={{ borderColor: "#dfc68e", color: COL.textMain, background: "#ffffff" }}
             >
               入室コードを再入力
             </button>
@@ -374,11 +354,7 @@ export default function LegalAiPage() {
               onClick={() => !limitReached && openConfirm()}
               disabled={loading || !q.trim() || limitReached}
               className="rounded-full px-5 py-2 font-bold transition disabled:opacity-60"
-              style={{
-                background: "#fff7d7",
-                color: COL.textMain,
-                border: "1px solid #e8dab3",
-              }}
+              style={{ background: "#fff7d7", color: COL.textMain, border: "1px solid #e8dab3" }}
             >
               {loading ? "回答生成中…" : "質問する"}
             </button>
@@ -416,25 +392,14 @@ export default function LegalAiPage() {
           )}
 
           {!a && limitReached && (
-            <div
-              className="mt-6 text-[13px] px-3 py-2 rounded-lg border"
-              style={{
-                color: COL.subText,
-                borderColor: "#efe6cf",
-                background: "#fffdf6",
-              }}
-            >
+            <div className="mt-6 text-[13px] px-3 py-2 rounded-lg border" style={{ color: COL.subText, borderColor: "#efe6cf", background: "#fffdf6" }}>
               今月の上限に達しました。次回の委員会までお待ちください。
             </div>
           )}
         </section>
 
-        {/* 当月の記録（PDF保存時は別の非表示DOMを使うので、ここはそのまま） */}
-        <section
-          id="report-area"
-          className="mt-6 rounded-3xl border bg-white p-5 sm:p-7"
-          style={{ borderColor: COL.border }}
-        >
+        {/* 当月の記録（画面にも表示。PDFは別DOMで生成） */}
+        <section id="report-area" className="mt-6 rounded-3xl border bg-white p-5 sm:p-7" style={{ borderColor: COL.border }}>
           <div className="flex items-end justify-between gap-3 flex-wrap">
             <h2 className="text-[16px] font-bold" style={{ color: COL.textMain }}>
               当月の記録（{ym}）
@@ -451,11 +416,7 @@ export default function LegalAiPage() {
           ) : (
             <ol className="mt-4 space-y-5">
               {items.map((it, idx) => (
-                <li
-                  key={it.id}
-                  className="rounded-xl border p-4"
-                  style={{ borderColor: "#efe6cf" }}
-                >
+                <li key={it.id} className="rounded-xl border p-4" style={{ borderColor: "#efe6cf" }}>
                   <div className="text-[12px] mb-2" style={{ color: COL.subText }}>
                     #{items.length - idx} ・ {fmt(it.at)}
                   </div>
@@ -480,20 +441,14 @@ export default function LegalAiPage() {
         {/* 送信確認モーダル */}
         {confirmOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center">
-            <div
-              className="absolute inset-0 bg-black/40"
-              onClick={() => setConfirmOpen(false)}
-            />
+            <div className="absolute inset-0 bg-black/40" onClick={() => setConfirmOpen(false)} />
             <div
               role="dialog"
               aria-modal="true"
               className="relative bg-white rounded-3xl shadow-xl w-[92%] max-w-md p-6 border"
               style={{ borderColor: COL.border }}
             >
-              <h2
-                className="text-lg font-semibold mb-2"
-                style={{ color: COL.textMain }}
-              >
+              <h2 className="text-lg font-semibold mb-2" style={{ color: COL.textMain }}>
                 送信しますか？
               </h2>
               <p className="text-sm mb-4" style={{ color: COL.subText }}>
@@ -512,11 +467,7 @@ export default function LegalAiPage() {
                   type="button"
                   onClick={ask}
                   className="px-4 py-2 rounded font-bold"
-                  style={{
-                    background: "#fff7d7",
-                    color: COL.textMain,
-                    border: "1px solid #e8dab3",
-                  }}
+                  style={{ background: "#fff7d7", color: COL.textMain, border: "1px solid #e8dab3" }}
                 >
                   送信する
                 </button>
