@@ -397,7 +397,7 @@ export default function LegalAiPage() {
                 aria-hidden="true"
               />
               <div className="text-[13px]" style={{ color: COL.subText }}>
-                🤖 エージェントが回答を出力中です… 少しお待ちください。
+                🤖 法務エージェントが回答を出力中です… 少しお待ちください。
               </div>
             </div>
           )}
